@@ -46,6 +46,55 @@ initialPadding = 5              # The number of seconds to display the initial f
 finalPadding = 5                # The number of seconds to display the final fluxes at the end of the video
 
 ################################################################################
+def enlargeGraph(counter, max_species_around_central, centralSpecies, speciesList, reactionList, maxSpeciesRates, nodes, edges):
+        """
+        Method to recursively enlarge a graph started by a defined central species with species and reactions that
+        flow towards and from the given central species.
+        
+        Enlarges the graph systematically by iterating over all species found in the stack <<centralSpecies>>.
+        Iterates over all reactions in <<<reactionList>>> and adds the reactant/product species to nodes if the
+        molecule was appearing in the same reaction as the central Species.
+        
+        Recursive calls to itself by updating the number of species <<counter>> already contained in the nodes list
+        
+        Returns a list of nodes and edges that should be used to create the flux diagram.
+        The number of elements in nodes equals the <<max_species_around_central>>   
+        """
+        
+        global maximumNodeCount, maximumEdgeCount, timeStep, concentrationTolerance, speciesRateTolerance
+
+        if counter == max_species_around_central or len(centralSpecies) == 0:#Termination criterion
+            return nodes, edges
+        else:
+            centralSpeciesIndex = centralSpecies.pop(0)
+            nodes.append(centralSpeciesIndex)
+            for index, reaction in enumerate(reactionList):
+                    for reactant, product in reaction.pairs:
+                        if counter == max_species_around_central:#Termination criterion
+                            return nodes, edges
+                        else:
+                            reactantIndex = speciesList.index(reactant)
+                            productIndex = speciesList.index(product)
+                            if maxSpeciesRates[reactantIndex, productIndex] == 0:
+                                break
+                            if len(nodes) > maximumNodeCount or len(edges) >= maximumEdgeCount: 
+                                break
+                            if reactantIndex == centralSpeciesIndex: 
+                                if productIndex not in nodes:
+                                    nodes.append(productIndex)
+                                    edges.append([reactantIndex, productIndex])
+                                    centralSpecies.append(productIndex)#add new neighbour species
+                                    counter += 1
+                            if productIndex == centralSpeciesIndex: 
+                                if reactantIndex not in nodes:
+                                    nodes.append(reactantIndex)
+                                    edges.append([reactantIndex, productIndex])
+                                    centralSpecies.append(reactantIndex)#add new neighbour species
+                                    counter += 1
+
+                                
+            return enlargeGraph(counter, max_species_around_central, centralSpecies, speciesList, reactionList, maxSpeciesRates, nodes, edges)
+
 
 def generateFluxDiagram(reactionModel, times, concentrations, reactionRates, outputDirectory, centralSpecies=None, speciesDirectory=None, settings=None):
     """
@@ -116,23 +165,9 @@ def generateFluxDiagram(reactionModel, times, concentrations, reactionRates, out
             if len(edges) >= maximumEdgeCount:
                 break
     else:
-        nodes.append(centralSpeciesIndex)
-        for index, reaction in enumerate(reactionList):
-            for reactant, product in reaction.pairs:
-                reactantIndex = speciesList.index(reactant)
-                productIndex = speciesList.index(product)
-                if maxSpeciesRates[reactantIndex, productIndex] == 0:
-                    break
-                if len(nodes) > maximumNodeCount or len(edges) >= maximumEdgeCount: 
-                    break
-                if reactantIndex == centralSpeciesIndex: 
-                    if productIndex not in nodes:
-                        nodes.append(productIndex)
-                        edges.append([reactantIndex, productIndex])
-                if productIndex == centralSpeciesIndex: 
-                    if reactantIndex not in nodes:
-                        nodes.append(reactantIndex)
-                        edges.append([reactantIndex, productIndex])
+        max_species_around_central = 10
+        nodes, edges = enlargeGraph(0, max_species_around_central, [centralSpeciesIndex], speciesList, reactionList, maxSpeciesRates, nodes, edges)
+        
     # Create the master graph
     # First we're going to generate the coordinates for all of the nodes; for
     # this we use the thickest pen widths for all nodes and edges 
