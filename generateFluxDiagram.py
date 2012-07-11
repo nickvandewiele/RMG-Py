@@ -276,6 +276,172 @@ def generateFluxDiagram(reactionModel, times, concentrations, reactionRates, out
         'flux_diagram.avi',
     )
     subprocess.check_call(command, cwd=outputDirectory)
+
+def generateCentralSpeciesFluxSnapshot(reactionModel, times, concentrations, reactionRates, outputDirectory, centralSpecies, speciesDirectory=None, settings=None):
+    """
+    For a given `reactionModel` and simulation results stored as arrays of
+    `times`, species `concentrations`, and `reactionRates`, generate a series
+    of snapshots with the major species fluxes towards and from a given `centralSpecies`.
+    Percentages next to the edges give:
+    * the share of this edges relative to the total flux of consumption in case the arrow
+    points away from the central species, or
+    * the share of this edges relative to the total flux of formation in case the arrow
+    points towards from the central species
+    
+    Much of this method is based on :method: generateFluxDiagram. `centralSpecies` is 
+    mandatory method argument now. 
+    
+    The individual snapshots are saved on disk at `outputDirectory.`
+    """
+    global maximumNodeCount, maximumEdgeCount, concentrationTolerance, speciesRateTolerance
+    # Allow user defined settings for flux diagram generation if given
+    if settings:
+        maximumNodeCount = settings['maximumNodeCount']       
+        maximumEdgeCount = settings['maximumEdgeCount']  
+        concentrationTolerance = settings['concentrationTolerance']   
+        speciesRateTolerance = settings['speciesRateTolerance']
+    
+    # Get the species and reactions corresponding to the provided concentrations and reaction rates
+    speciesList = reactionModel.core.species[:]
+    numSpecies = len(speciesList)
+    reactionList = reactionModel.core.reactions[:]
+    numReactions = len(reactionList)
+    
+    #search index of central species:
+    if centralSpecies is not None:
+        for i, species in enumerate(speciesList):
+            if species.label == centralSpecies:
+                centralSpeciesIndex = i
+                break 
+    
+    # Compute the rates between each pair of species (big matrix warning!)
+    speciesRates = numpy.zeros((len(times),numSpecies,numSpecies), numpy.float64)
+    for index, reaction in enumerate(reactionList):
+        rate = reactionRates[:,index]
+        if not reaction.pairs: reaction.generatePairs()
+        for reactant, product in reaction.pairs:
+            reactantIndex = speciesList.index(reactant)
+            productIndex = speciesList.index(product)
+            speciesRates[:,reactantIndex,productIndex] += rate
+            speciesRates[:,productIndex,reactantIndex] -= rate
+    
+    # Determine the maximum concentration for each species and the maximum overall concentration
+    maxConcentrations = numpy.max(numpy.abs(concentrations), axis=0)
+    maxConcentration = numpy.max(maxConcentrations)
+    
+    # Determine the maximum rate for each species-species pair and the maximum overall species-species rate
+    maxSpeciesRates = numpy.max(numpy.abs(speciesRates), axis=0)
+    maxSpeciesRate = numpy.max(maxSpeciesRates)
+    speciesIndex = maxSpeciesRates.reshape((numSpecies*numSpecies)).argsort()
+    
+    # Determine the nodes and edges to keep
+    nodes = []; edges = []
+    max_species_around_central = 15
+    nodes, edges = enlargeGraph(0, max_species_around_central, [centralSpeciesIndex], speciesList, reactionList, maxSpeciesRates, nodes, edges)
+        
+    # Create the master graph
+    # First we're going to generate the coordinates for all of the nodes; for
+    # this we use the thickest pen widths for all nodes and edges 
+    graph = pydot.Dot('flux_snapshot', graph_type='digraph', overlap="false")
+    graph.set_rankdir('LR')
+    graph.set_fontname('sans')
+    graph.set_fontsize('10')
+    # Add a node for each species
+    for index in nodes:
+        species = speciesList[index]
+        node = pydot.Node(name=species.label)
+        node.set_penwidth(maximumNodePenWidth)
+        graph.add_node(node)
+        # Try to use an image instead of the label
+        speciesIndex = re.search('\(\d+\)$', species.label).group(0) + '.png'
+        imagePath = ''
+        if not speciesDirectory or not os.path.exists(speciesDirectory): 
+            continue
+        for root, dirs, files in os.walk(speciesDirectory):
+            for f in files:
+                if f.endswith(speciesIndex):
+                    imagePath = os.path.join(root, f)
+                    break
+        if os.path.exists(imagePath):
+            node.set_image(imagePath)
+            node.set_label("")
+    # Add an edge for each species-species rate
+    for reactantIndex, productIndex in edges:
+        if reactantIndex in nodes and productIndex in nodes:
+            reactant = speciesList[reactantIndex]
+            product = speciesList[productIndex]
+            edge = pydot.Edge(reactant.label, product.label)
+            edge.set_penwidth(maximumEdgePenWidth)
+            graph.add_edge(edge) 
+    
+    # Generate the coordinates for all of the nodes using the specified program
+    graph = pydot.graph_from_dot_data(graph.create_dot(prog=program))
+    
+    # Now iterate over the time points, setting the pen widths appropriately
+    for t in range(len(times)):
+        # Update the nodes
+        slope = -maximumNodePenWidth / math.log10(concentrationTolerance)
+        for index in nodes:
+            species = speciesList[index]
+            node = graph.get_node('"{0}"'.format(species.label))[0]
+            concentration = concentrations[t,index] / maxConcentration
+            if concentration < concentrationTolerance:
+                penwidth = 0.0
+            else:
+                penwidth = slope * math.log10(concentration) + maximumNodePenWidth
+            node.set_penwidth(penwidth)
+        # Update the edges
+        slope = -maximumEdgePenWidth / math.log10(speciesRateTolerance)
+        
+        #determine maximum flux of formation and consumption:
+        #calculate total rate of formation and consumption for the species in centralSpeciesIndex:
+        total_Flux_Formation, total_Flux_Consumption = 0, 0
+        for rate in speciesRates[t,centralSpeciesIndex,:]:
+            if rate < 0:
+                total_Flux_Formation += rate
+            if rate > 0:
+                total_Flux_Consumption += rate
+
+        #make everything positive:
+        total_Flux_Formation = -total_Flux_Formation
+        
+        for index in range(len(edges)):
+            reactantIndex, productIndex = edges[index]
+            if reactantIndex in nodes and productIndex in nodes:
+                reactant = speciesList[reactantIndex]
+                product = speciesList[productIndex]
+                edge = graph.get_edge('"{0}"'.format(reactant.label), '"{0}"'.format(product.label))[0]
+                # Determine direction of arrow based on sign of rate
+                speciesRate = speciesRates[t,reactantIndex,productIndex] / maxSpeciesRate
+                fraction = None
+                if speciesRate < 0:
+                    edge.set_dir("back")
+                    if reactantIndex == centralSpeciesIndex:
+                        fraction = -speciesRates[t,reactantIndex,productIndex] / total_Flux_Formation * 100
+                    elif productIndex == centralSpeciesIndex:
+                        fraction = -speciesRates[t,reactantIndex,productIndex] / total_Flux_Consumption * 100
+                    speciesRate = -speciesRate
+                else:
+                    edge.set_dir("forward")
+                    if reactantIndex == centralSpeciesIndex:
+                        fraction = speciesRates[t,reactantIndex,productIndex] / total_Flux_Consumption * 100
+                    elif productIndex == centralSpeciesIndex:
+                        fraction = speciesRates[t,reactantIndex,productIndex] / total_Flux_Formation * 100
+                # Set the edge pen width
+                if speciesRate < speciesRateTolerance:
+                    penwidth = 0.0
+                    edge.set_dir("none")
+                else:
+                    penwidth = slope * math.log10(speciesRate) + maximumEdgePenWidth
+                edge.set_penwidth(penwidth)
+                if fraction is not None:
+                    edge.set_label ( "{0:.2G}".format(numpy.abs(fraction)) +' %')
+        
+        # Save the graph at this time to a dot file and a PNG image
+        label = 't = 10^{0:.1f} s'.format(math.log10(times[t]))
+        
+        graph.set_label(label)
+        graph.write_png(os.path.join(outputDirectory, 'flux_snapshot_log({0:2G})_{1}.png'.format(math.log10(times[t]), centralSpecies)))
     
 ################################################################################
 
@@ -595,7 +761,58 @@ def createFluxDiagram(savePath, inputFile, chemkinFile, speciesDict, java = Fals
             generateFluxDiagram(rmg.reactionModel, time, coreSpeciesConcentrations, coreReactionRates, os.path.join(savePath, '{0:d}'.format(index+1)), 
                                 centralSpecies, speciesPath, settings)
 ################################################################################
+def createCentralSpeciesFluxSnapshot(savePath, inputFile, chemkinFile, speciesDict, centralSpecies, java = False, settings = None, chemkinOutput = ''):
+    """
+    Generates the a series of snapshots with major fluxes towards and from a `centralSpecies`
+     based on a condition 'inputFile', chemkin.inp chemkinFile,
+    a speciesDict txt file, plus an optional chemkinOutput file.
+    
+    Much of this method is based on :method: createFluxDiagram. `centralSpecies` is 
+    mandatory method argument now.
+    """
+    if java:
+        rmg = loadRMGJavaJob(inputFile, chemkinFile, speciesDict)
+    else:
+        rmg = loadRMGPyJob(inputFile, chemkinFile, speciesDict)
 
+    speciesPath = os.path.join(os.path.dirname(inputFile), 'species')
+    
+    # if you have a chemkin output, then you only have one reactionSystem
+    if chemkinOutput:
+        try:
+            os.makedirs(os.path.join(savePath,'1'))
+        except OSError:
+            pass
+
+        print 'Extracting species concentrations and calculating reaction rates from chemkin output...'
+        time, coreSpeciesConcentrations, coreReactionRates, edgeReactionRates = loadChemkinOutput(chemkinOutput, rmg.reactionModel)
+
+        print 'Generating flux diagram for chemkin output...'
+        generateCentralSpeciesFluxSnapshot(rmg.reactionModel, time, coreSpeciesConcentrations, coreReactionRates, os.path.join(savePath, '1'), centralSpecies, speciesPath, settings)
+
+    else:
+        # Generate a flux diagram video for each reaction system
+        for index, reactionSystem in enumerate(rmg.reactionSystems):
+            try:
+                os.makedirs(os.path.join(savePath,'{0:d}'.format(index+1)))
+            except OSError:
+            # Fail silently on any OS errors
+                pass
+
+            #rmg.makeOutputSubdirectory('flux/{0:d}'.format(index+1))
+
+            # If there is no termination time, then add one to prevent jobs from
+            # running forever
+            if not any([isinstance(term, TerminationTime) for term in reactionSystem.termination]):
+                reactionSystem.termination.append(TerminationTime((1e10,'s')))
+
+            print 'Conducting simulation of reaction system {0:d}...'.format(index+1)
+            time, coreSpeciesConcentrations, coreReactionRates, edgeReactionRates = simulate(rmg.reactionModel, reactionSystem, settings)
+
+            print 'Generating flux snapshots for reaction system {0:d}...'.format(index+1)
+            generateCentralSpeciesFluxSnapshot(rmg.reactionModel, time, coreSpeciesConcentrations, coreReactionRates, os.path.join(savePath, '{0:d}'.format(index+1)), 
+                                centralSpecies, speciesPath, settings)
+################################################################################            
 if __name__ == '__main__':
     # This might not work anymore because functions were modified for use with webserver
 
