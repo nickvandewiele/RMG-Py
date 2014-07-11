@@ -104,6 +104,7 @@ class Species(object):
         self.polarizability = polarizability
         self.Zrot = Zrot
         self.energyTransferModel = energyTransferModel
+        self.props = {}
 
     def __repr__(self):
         """
