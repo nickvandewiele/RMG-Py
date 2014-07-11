@@ -83,7 +83,7 @@ class Species(rmgpy.species.Species):
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.coreSizeAtCreation),)
 
-    def generateThermoData(self, database, thermoClass=NASA, quantumMechanics=None):
+    def generateThermoData(self, database=None, thermoClass=NASA, quantumMechanics=None):
         """
         Generates thermo data, first checking Libraries, then using either QM or Database.
         
@@ -102,7 +102,8 @@ class Species(rmgpy.species.Species):
 
         thermo0 = None
         
-        thermo0 = database.thermo.getThermoDataFromLibraries(self)
+        if database is not None:
+            thermo0 = database.thermo.getThermoDataFromLibraries(self)
         
         if thermo0 is not None:
             logging.info("Found thermo for {0} in thermo library".format(self.label))
