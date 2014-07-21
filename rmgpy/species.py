@@ -145,7 +145,15 @@ class Species(object):
         A helper function used when pickling an object.
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive))
-
+    
+    def __eq__(self, other):
+        return self.isIsomorphic(other)
+        #return self.molecule[0].getFormula() == other.molecule[0].getFormula()
+    
+    def __hash__(self):
+        return hash((self.molecule[0].toInChIKey()))
+        #return hash((self.molecule[0].getFormula()))
+    
     def getMolecularWeight(self):
         return self._molecularWeight
     def setMolecularWeight(self, value):

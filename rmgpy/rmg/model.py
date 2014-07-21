@@ -82,7 +82,13 @@ class Species(rmgpy.species.Species):
         A helper function used when pickling an object.
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.coreSizeAtCreation),)
-
+    
+    def __eq__(self, other):
+        return self.isIsomorphic(other)
+    
+    def __hash__(self):
+        return hash((self.molecule[0].toInChIKey()))
+    
     def generateThermoData(self, database=None, thermoClass=NASA, quantumMechanics=None):
         """
         Generates thermo data, first checking Libraries, then using either QM or Database.
