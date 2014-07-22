@@ -74,7 +74,10 @@ class Abstract_CBH_Reaction(object):
         for unique_species, no_occurr in unique_spc.iteritems():
             reactants_products_list.append(unique_species)#add to products list
             self.error_reaction.coefficients[unique_species.label] = no_occurr #update coefficient
-        
+    
+    def exclude_hydrogens(self, atoms):
+        return [atom for atom in atoms if not atom.symbol == 'H']
+          
 class CBH0Reaction(Abstract_CBH_Reaction):
     '''
     Creates rung '0' of the CBH method for the creation
@@ -100,11 +103,10 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         '''
         spc_list = []
         molecule = self.spc.molecule[0]
-        for atom in molecule.atoms:#iterate over all atoms!
-            element = atom.symbol
-            if not element == 'H':#only heavy atoms
-                product = makeSpeciesFromSMILES(element)
-                spc_list.append(product)
+        heavy_atoms = self.exclude_hydrogens(molecule.atoms)
+        for atom in heavy_atoms:#iterate over all atoms!
+            product = makeSpeciesFromSMILES(atom.symbol)
+            spc_list.append(product)
         
         self.map_species_list(spc_list)
             
