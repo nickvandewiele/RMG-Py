@@ -129,10 +129,9 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         
         #iterate over all unique non-hydrogen bonds of the Molecule:
         molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in molecule.atoms:
-            for atom2 in molecule.atoms:
+        for atom1 in molecule.vertices:
+            for atom2 in atom1.edges:
                 if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
-                    if molecule.hasBond(atom1, atom2):
                         if atom1.sortingLabel < atom2.sortingLabel:
                             bond = molecule.getBond(atom1, atom2)
                             balancing_dihydrogen += bond_orders[bond.order]
@@ -213,10 +212,9 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         #iterate over all unique non-hydrogen bonds of the Molecule:
         molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in molecule.atoms:
-            for atom2 in molecule.atoms:
+        for atom1 in molecule.vertices:
+            for atom2 in atom1.edges:
                 if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
-                    if molecule.hasBond(atom1, atom2):
                         if atom1.sortingLabel < atom2.sortingLabel:
                             bond = molecule.getBond(atom1, atom2)
                             adjList = self.createAdjacencyList(atom1, atom2, bond)#possibly a de-tour by creating adjList
