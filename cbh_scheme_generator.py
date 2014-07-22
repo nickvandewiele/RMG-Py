@@ -108,7 +108,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
             product = makeSpeciesFromSMILES(atom.symbol)
             spc_list.append(product)
         
-        self.map_species_list(spc_list)
+        self.map_species_list(self.error_reaction.products, spc_list)
             
     def populate_reactants(self):
         '''
@@ -227,21 +227,42 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     def createCBH0Product(self, atom):
         return makeSpeciesFromSMILES(atom.symbol)
     
+    def exclude_terminal_moieties(self, molecule, atoms):
+        '''
+                
+        Terminal atoms in the reactant only have atom neighbor so there is
+        no overlap of in products. As a result, exclude terminal atoms. 
+        '''
+        filtered = []
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in atoms:
+            non_hydrogen_neighbours = []
+            for atom2 in atom1.edges:
+                    if not atom2.symbol == 'H':
+                        non_hydrogen_neighbours.append(atom2)
+            if len(non_hydrogen_neighbours) > 1:
+                filtered.append(atom1)
+                
+        return filtered
+        
     def populate_reactants(self):
         '''
         Each pair of adjacent heavy-atom bonds (products in cbh-1)
         shares a common heavy-atom  
-        (as reactants in chb-1 as well as products in cbh-0) 
+        (as reactants in chb-1 as well as products in cbh-0).
+
         '''
         spc_list = []
         
         #iterate over all heavy-atom bonds:
         molecule = self.spc.molecule[0]
         
-        for atom in molecule.atoms:
-            if not atom.symbol == 'H':
-                reactant = self.createCBH0Product(atom)
-                spc_list.append(reactant)
+        non_terminal_atoms = self.exclude_terminal_moieties(molecule, molecule.atoms)
+        non_terminal_heavy_atoms = self.exclude_hydrogens(non_terminal_atoms)
+        
+        for atom in non_terminal_heavy_atoms:
+            reactant = self.createCBH0Product(atom)
+            spc_list.append(reactant)
         
         self.map_species_list(self.error_reaction.reactants, spc_list)
     
