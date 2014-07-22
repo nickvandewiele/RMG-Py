@@ -67,13 +67,13 @@ class Abstract_CBH_Reaction(object):
         self.populate_products()
         self.populate_reactants()
         
-    def map_species_list(self, spc_list):
-        #populate products list of the reaction, and update coefficient for each unique product:
+    def map_species_list(self, reactants_products_list, spc_list):
+        #populate reactants or products list of the reaction, and update coefficient for each unique species:
         from collections import Counter
         unique_spc = Counter(spc_list)
-        for product, no_occurr in unique_spc.iteritems():
-            self.error_reaction.products.append(product)#add to products list
-            self.error_reaction.coefficients[product.label] = no_occurr #update coefficient
+        for unique_species, no_occurr in unique_spc.iteritems():
+            reactants_products_list.append(unique_species)#add to products list
+            self.error_reaction.coefficients[unique_species.label] = no_occurr #update coefficient
         
 class CBH0Reaction(Abstract_CBH_Reaction):
     '''
@@ -222,7 +222,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
                             product = makeSpeciesFromMolecule(mol)
                             spc_list.append(product)
         
-        self.map_species_list(spc_list)
+        self.map_species_list(self.error_reaction.products, spc_list)
     
     def populate_reactants(self):
         pass          
