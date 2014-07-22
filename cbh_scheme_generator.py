@@ -175,15 +175,63 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         
         #count no. of H2 molecules required as reactant for the H-element balance of the reaction:
         balancing_dihydrogen = ( h_count_prod - self.spc.molecule[0].getNumAtoms('H') ) / 2
-        h2 = makeSpecies('[H][H]')
+        h2 = makeSpeciesFromSMILES('[H][H]')
         self.error_reaction.reactants.append(h2)
         self.error_reaction.coefficients[h2.label] = balancing_dihydrogen 
-   
 
+class CBH1Reaction(Abstract_CBH_Reaction):
+    '''
+    Creates rung '1' of the CBH method for the creation
+    of an potential error-canceling reaction.
+    
+    Corresponds to the Pople's isodesmic bond separation scheme.
+    '''  
+    def __init__(self, spc):
+        super(self.__class__, self).__init__(spc)
+        
+    def createAdjacencyList(self, atom1, atom2, bond):
+        order = bond.order
+        first_line = '1 '+atom1.symbol+' '+str(atom1.radicalElectrons)+' '+ str(atom1.lonePairs) +' {2,'+order+'}'
+        second_line = '2 '+atom2.symbol+' '+str(atom2.radicalElectrons)+' '+ str(atom2.lonePairs) +' {1,'+order+'}'
+        adjList = first_line + '\n' + second_line
+        
+        return adjList
+        
+    def populate_products(self):  
+        '''
+        Extracting all heavy-atom bonds in the molecule as 
+        isolated valence-satisfied molecules 
+        (e.g. C-C double bond as H2C=CH2).
+        '''
+
+        spc_list = []
+
+        #iterate over all heavy-atom bonds:
+        molecule = self.spc.molecule[0]
+        
+        #iterate over all unique non-hydrogen bonds of the Molecule:
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in molecule.atoms:
+            for atom2 in molecule.atoms:
+                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
+                    if molecule.hasBond(atom1, atom2):
+                        if atom1.sortingLabel < atom2.sortingLabel:
+                            bond = molecule.getBond(atom1, atom2)
+                            adjList = self.createAdjacencyList(atom1, atom2, bond)#possibly a de-tour by creating adjList
+                            mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
+                            product = makeSpeciesFromMolecule(mol)
+                            spc_list.append(product)
+        
+        self.map_species_list(spc_list)
+    
+    def populate_reactants(self):
+        pass          
+    
+    
 if __name__ == '__main__':
-    spc = makeSpecies('C1C=CC=C1')
+    spc = makeSpeciesFromSMILES('C1C=CC=C1')
     #mol = makeSpecies('C')
-    cbh0 = CBH0Reaction(spc=spc)
-    cbh0.run()
-    rxn =  cbh0.error_reaction
+    cbh1 = CBH1Reaction(spc=spc)
+    cbh1.run()
+    rxn =  cbh1.error_reaction
     print rxn.coefficients
