@@ -10,6 +10,9 @@ from rmgpy.molecule import Molecule
 from rmgpy.reaction import Reaction
 from rmgpy.rmg.model import CoreEdgeReactionModel
 
+def exclude_hydrogens(atoms):
+        return [atom for atom in atoms if not atom.symbol == 'H']
+
 def makeSpeciesFromMolecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
@@ -117,11 +120,6 @@ class Abstract_CBH_Reaction(object):
         for unique_species, no_occurr in unique_spc.iteritems():
             reactants_products_list.append(unique_species)#add to products list
             self.error_reaction.coefficients[unique_species.label] = no_occurr #update coefficient
-    
-    def exclude_hydrogens(self, atoms):
-        return [atom for atom in atoms if not atom.symbol == 'H']
-    
-    
 
 
 class CBH0Reaction(Abstract_CBH_Reaction):
@@ -149,7 +147,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         '''
         spc_list = []
         molecule = self.spc.molecule[0]
-        heavy_atoms = self.exclude_hydrogens(molecule.atoms)
+        heavy_atoms = exclude_hydrogens(molecule.atoms)
         for atom in heavy_atoms:#iterate over all atoms!
             product = makeSpeciesFromSMILES(atom.symbol)
             spc_list.append(product)
@@ -270,7 +268,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         filtered = []
         molecule.sortAtoms()#don't know if this is necessary.
         for atom1 in atoms:
-            neighbours = self.exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
             if len(neighbours) > 1:
                 filtered.append(atom1)
                 
@@ -298,7 +296,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         filtered = []
         molecule.sortAtoms()#don't know if this is necessary.
         for atom1 in atoms:
-            neighbours = self.exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
             filtered.extend([atom1 for _ in range(len(neighbours)-1)])
                 
         return filtered
@@ -315,7 +313,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         molecule = self.spc.molecule[0]
         
         atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
-        atoms = self.exclude_hydrogens(atoms)
+        atoms = exclude_hydrogens(atoms)
         atoms = self.account_for_branching(molecule, atoms)
         
         for atom in atoms:
@@ -346,11 +344,11 @@ class CBH2Reaction(Abstract_CBH_Reaction):
 
         #iterate over all heavy-atom bonds:
         molecule = self.spc.molecule[0]
-        atoms = self.exclude_hydrogens(molecule.atoms)
+        atoms = exclude_hydrogens(molecule.atoms)
         
         for atom in atoms:
             neighbors = [atom2 for atom2 in atom.edges]
-            neighbors = self.exclude_hydrogens(neighbors)
+            neighbors = exclude_hydrogens(neighbors)
             product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
             spc_list.append(product)
         
