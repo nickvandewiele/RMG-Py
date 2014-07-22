@@ -67,6 +67,14 @@ class Abstract_CBH_Reaction(object):
         self.populate_products()
         self.populate_reactants()
         
+    def map_species_list(self, spc_list):
+        #populate products list of the reaction, and update coefficient for each unique product:
+        from collections import Counter
+        unique_spc = Counter(spc_list)
+        for product, no_occurr in unique_spc.iteritems():
+            self.error_reaction.products.append(product)#add to products list
+            self.error_reaction.coefficients[product.label] = no_occurr #update coefficient
+        
 class CBH0Reaction(Abstract_CBH_Reaction):
     '''
     Creates rung '0' of the CBH method for the creation
@@ -98,12 +106,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
                 product = makeSpeciesFromSMILES(element)
                 spc_list.append(product)
         
-        #populate products list of the reaction, and update coefficient for each unique product:
-        from collections import Counter
-        unique_spc = Counter(spc_list)
-        for product, no_occurr in unique_spc.iteritems():
-            self.error_reaction.products.append(product)#add to products list
-            self.error_reaction.coefficients[product.label] = no_occurr #update coefficient
+        self.map_species_list(spc_list)
             
     def populate_reactants(self):
         '''
