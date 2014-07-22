@@ -35,7 +35,13 @@ class TestCBH0(unittest.TestCase):
         self.assertEquals(rxn.coefficients['[H][H]'], 7)
         self.assertEquals(rxn.coefficients['C'], 7)
         self.assertEquals(rxn.coefficients['S'], 1)
-
+    def testCyclohexanone(self):
+        smi = 'C1CCC(=O)CC1'
+        rxn = self.runCBH0(smi)
+        self.assertEquals(rxn.coefficients['[H][H]'], 8)
+        self.assertEquals(rxn.coefficients['C'], 6)
+        self.assertEquals(rxn.coefficients['O'], 1)
+        
 class TestCBH1(unittest.TestCase):
 
     def runCBH1(self,smi):
@@ -73,6 +79,14 @@ class TestCBH1(unittest.TestCase):
         self.assertEquals(rxn.coefficients['CC'], 6)
         self.assertEquals(rxn.coefficients['CS'], 1)
         
+    def testCyclohexanone(self):
+        smi = 'C1CCC(=O)CC1'
+        rxn = self.runCBH1(smi)
+    
+        self.assertEquals(rxn.coefficients['C'], 7)
+        
+        self.assertEquals(rxn.coefficients['CC'], 6)
+        self.assertEquals(rxn.coefficients['C=O'], 1)    
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

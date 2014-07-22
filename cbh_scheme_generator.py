@@ -244,7 +244,36 @@ class CBH1Reaction(Abstract_CBH_Reaction):
                 filtered.append(atom1)
                 
         return filtered
+    
+    def account_for_branching(self, molecule, atoms):
+        '''
+        Atoms with more than two heavy-atom neighbors will 
+        not be overcounted once, but more than once.
         
+        E.g.
+        - a  secondary (non-branched) carbon atom will
+        be overcounted once. 
+        - a tertiary carbon atom (branched 'once') will
+        be overcounted twice.
+        
+        Generally, the number of reactants per heavy atom 
+        that needs to be added to balance the equation
+        follows the following formula:
+        
+        n = no. of heavy atom neighbors - 1
+        
+        
+        '''
+        filtered = []
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in atoms:
+            non_hydrogen_neighbours = []
+            for atom2 in atom1.edges:
+                    if not atom2.symbol == 'H':
+                        non_hydrogen_neighbours.append(atom2)
+            filtered.extend([atom1 for i in range(len(non_hydrogen_neighbours)-1)])
+                
+        return filtered
     def populate_reactants(self):
         '''
         Each pair of adjacent heavy-atom bonds (products in cbh-1)
@@ -259,8 +288,11 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         non_terminal_atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
         non_terminal_heavy_atoms = self.exclude_hydrogens(non_terminal_atoms)
+        non_terminal_heavy_accounted_for_branching_atoms = self.account_for_branching(
+                                                                                      molecule, non_terminal_heavy_atoms
+                                                                                      )
         
-        for atom in non_terminal_heavy_atoms:
+        for atom in non_terminal_heavy_accounted_for_branching_atoms:
             reactant = self.createCBH0Product(atom)
             spc_list.append(reactant)
         
@@ -268,7 +300,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     
     
 if __name__ == '__main__':
-    spc = makeSpeciesFromSMILES('C1C=CC=C1')
+    spc = makeSpeciesFromSMILES('C1CCC(=O)CC1')
     #mol = makeSpecies('C')
     cbh1 = CBH1Reaction(spc=spc)
     cbh1.run()
