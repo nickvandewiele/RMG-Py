@@ -286,13 +286,11 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         #iterate over all heavy-atom bonds:
         molecule = self.spc.molecule[0]
         
-        non_terminal_atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
-        non_terminal_heavy_atoms = self.exclude_hydrogens(non_terminal_atoms)
-        non_terminal_heavy_accounted_for_branching_atoms = self.account_for_branching(
-                                                                                      molecule, non_terminal_heavy_atoms
-                                                                                      )
+        atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
+        atoms = self.exclude_hydrogens(atoms)
+        atoms = self.account_for_branching(molecule, atoms)
         
-        for atom in non_terminal_heavy_accounted_for_branching_atoms:
+        for atom in atoms:
             reactant = self.createCBH0Product(atom)
             spc_list.append(reactant)
         
