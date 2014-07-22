@@ -271,11 +271,8 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         filtered = []
         molecule.sortAtoms()#don't know if this is necessary.
         for atom1 in atoms:
-            non_hydrogen_neighbours = []
-            for atom2 in atom1.edges:
-                    if not atom2.symbol == 'H':
-                        non_hydrogen_neighbours.append(atom2)
-            if len(non_hydrogen_neighbours) > 1:
+            neighbours = self.exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            if len(neighbours) > 1:
                 filtered.append(atom1)
                 
         return filtered
@@ -302,11 +299,8 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         filtered = []
         molecule.sortAtoms()#don't know if this is necessary.
         for atom1 in atoms:
-            non_hydrogen_neighbours = []
-            for atom2 in atom1.edges:
-                    if not atom2.symbol == 'H':
-                        non_hydrogen_neighbours.append(atom2)
-            filtered.extend([atom1 for i in range(len(non_hydrogen_neighbours)-1)])
+            neighbours = self.exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            filtered.extend([atom1 for _ in range(len(neighbours)-1)])
                 
         return filtered
     def populate_reactants(self):
