@@ -227,7 +227,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     def createCBH0Product(self, atom):
         return makeSpeciesFromSMILES(atom.symbol)
     
-    def exclude_terminal_moieties(self, molecule, atoms):
+    def exclude_terminal_atoms(self, molecule, atoms):
         '''
                 
         Terminal atoms in the reactant only have atom neighbor so there is
@@ -257,7 +257,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         #iterate over all heavy-atom bonds:
         molecule = self.spc.molecule[0]
         
-        non_terminal_atoms = self.exclude_terminal_moieties(molecule, molecule.atoms)
+        non_terminal_atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
         non_terminal_heavy_atoms = self.exclude_hydrogens(non_terminal_atoms)
         
         for atom in non_terminal_heavy_atoms:
