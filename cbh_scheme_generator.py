@@ -31,7 +31,50 @@ class ErrorCancellingReaction(Reaction):
     def __init__(self, *args, **kwargs):
             super(self.__class__, self).__init__(*args, **kwargs)
             self.coefficients = {}
-
+            
+            
+class CBHSpeciesGenerator(object):
+    def __init__(self):
+        pass
+    def createAdjacencyList_cbh1_product(self, atom1, atom2, bond):
+        order = bond.order
+        first_line = '1 '+atom1.symbol+' '+str(atom1.radicalElectrons)+' '+ str(atom1.lonePairs) +' {2,'+order+'}'
+        second_line = '2 '+atom2.symbol+' '+str(atom2.radicalElectrons)+' '+ str(atom2.lonePairs) +' {1,'+order+'}'
+        adjList = first_line + '\n' + second_line
+        
+        return adjList
+    
+    def createAdjacencyList_cbh2_product(self, atom, neighbors, molecule):
+        lines = []
+        first_line = ' '.join(['1',atom.symbol,str(atom.radicalElectrons),str(atom.lonePairs)])
+        connectivity = ''
+        for i, neigh in enumerate(neighbors):
+            order = molecule.getBond(atom, neigh).order
+            index_neigh = str(i+2)#neighbours start at index 2
+            connectivity += '{'+index_neigh+','+order+'} '
+            line = ' '.join([index_neigh,neigh.symbol,str(neigh.radicalElectrons),str(neigh.lonePairs),'{1,'+order+'}'])
+            lines.append(line)
+            
+        first_line += ' '+connectivity
+        lines.insert(0, first_line)
+        
+        return '\n'.join(lines)
+    
+    def create_cbh0_product(self, atom):
+        return makeSpeciesFromSMILES(atom.symbol)
+        
+    def create_cbh1_product(self, atom1, atom2, bond):
+        adjList = self.createAdjacencyList_cbh1_product(atom1, atom2, bond)#possibly a de-tour by creating adjList
+        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
+        product = makeSpeciesFromMolecule(mol)
+        return product 
+    
+    def create_cbh2_product(self, atom, neighbors, molecule):
+        adjList = self.createAdjacencyList_cbh2_product(atom, neighbors, molecule)#possibly a de-tour by creating adjList
+        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
+        product = makeSpeciesFromMolecule(mol)
+        return product
+    
 class Abstract_CBH_Reaction(object):
     '''
     Superclass to all implementations of the 
@@ -77,7 +120,10 @@ class Abstract_CBH_Reaction(object):
     
     def exclude_hydrogens(self, atoms):
         return [atom for atom in atoms if not atom.symbol == 'H']
-          
+    
+    
+
+
 class CBH0Reaction(Abstract_CBH_Reaction):
     '''
     Creates rung '0' of the CBH method for the creation
@@ -190,13 +236,6 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     def __init__(self, spc):
         super(self.__class__, self).__init__(spc)
         
-    def createAdjacencyList(self, atom1, atom2, bond):
-        order = bond.order
-        first_line = '1 '+atom1.symbol+' '+str(atom1.radicalElectrons)+' '+ str(atom1.lonePairs) +' {2,'+order+'}'
-        second_line = '2 '+atom2.symbol+' '+str(atom2.radicalElectrons)+' '+ str(atom2.lonePairs) +' {1,'+order+'}'
-        adjList = first_line + '\n' + second_line
-        
-        return adjList
         
     def populate_products(self):  
         '''
@@ -217,15 +256,11 @@ class CBH1Reaction(Abstract_CBH_Reaction):
                 if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
                         if atom1.sortingLabel < atom2.sortingLabel:
                             bond = molecule.getBond(atom1, atom2)
-                            adjList = self.createAdjacencyList(atom1, atom2, bond)#possibly a de-tour by creating adjList
-                            mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
-                            product = makeSpeciesFromMolecule(mol)
+                            product = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
                             spc_list.append(product)
         
         self.map_species_list(self.error_reaction.products, spc_list)
     
-    def createCBH0Product(self, atom):
-        return makeSpeciesFromSMILES(atom.symbol)
     
     def exclude_terminal_atoms(self, molecule, atoms):
         '''
