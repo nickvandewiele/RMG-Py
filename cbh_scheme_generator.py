@@ -10,13 +10,13 @@ from rmgpy.molecule import Molecule
 from rmgpy.reaction import Reaction
 from rmgpy.rmg.model import CoreEdgeReactionModel
 
-def makeSpeciesFromMolecule(mol):
-    spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol)
+def makeSpeciesFromMolecule(mol, label=''):
+    spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
 
 def makeSpeciesFromSMILES(smi):
     mol = Molecule().fromSMILES(smi)
-    return makeSpeciesFromMolecule(mol)
+    return makeSpeciesFromMolecule(mol, label=smi)
 
 class ErrorCancellingReaction(Reaction):
     '''
