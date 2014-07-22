@@ -10,9 +10,13 @@ from rmgpy.molecule import Molecule
 from rmgpy.reaction import Reaction
 from rmgpy.rmg.model import CoreEdgeReactionModel
 
-def makeSpecies(smi):
-        spc, isNew = CoreEdgeReactionModel().makeNewSpecies(Molecule().fromSMILES(smi))
-        return spc
+def makeSpeciesFromMolecule(mol):
+    spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol)
+    return spc
+
+def makeSpeciesFromSMILES(smi):
+    mol = Molecule().fromSMILES(smi)
+    return makeSpeciesFromMolecule(mol)
 
 class ErrorCancellingReaction(Reaction):
     '''
@@ -90,8 +94,8 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         molecule = self.spc.molecule[0]
         for atom in molecule.atoms:#iterate over all atoms!
             element = atom.symbol
-            if not element == 'H':
-                product = makeSpecies(element)
+            if not element == 'H':#only heavy atoms
+                product = makeSpeciesFromSMILES(element)
                 spc_list.append(product)
         
         #populate products list of the reaction, and update coefficient for each unique product:
@@ -128,7 +132,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
                             bond = molecule.getBond(atom1, atom2)
                             balancing_dihydrogen += bond_orders[bond.order]
     
-        h2 = makeSpecies('[H][H]')
+        h2 = makeSpeciesFromSMILES('[H][H]')
         self.error_reaction.reactants.append(h2)
         self.error_reaction.coefficients[h2.label] = balancing_dihydrogen
     
@@ -151,7 +155,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         for element, no_occurr in element_map.iteritems():
             if not element == 'H': #heavy atoms
                 #create molecule from the element symbol (eg: 'C' becomes molecule methane)
-                product = makeSpecies(element) 
+                product = makeSpeciesFromSMILES(element) 
                 self.error_reaction.products.append(product)#add to products list
                 self.error_reaction.coefficients[product.label] = no_occurr #update coefficient
     
