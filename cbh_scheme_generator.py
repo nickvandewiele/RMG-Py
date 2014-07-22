@@ -28,7 +28,7 @@ class ErrorCancellingReaction(Reaction):
             super(self.__class__, self).__init__(*args, **kwargs)
             self.coefficients = {}
 
-class CBH_X_Reaction(object):
+class Abstract_CBH_Reaction(object):
     '''
     Superclass to all implementations of the 
     Connectivity-based Hierarchy error-canceling reaction classes.
@@ -63,7 +63,7 @@ class CBH_X_Reaction(object):
         self.populate_products()
         self.populate_reactants()
         
-class CBH0Reaction(CBH_X_Reaction):
+class CBH0Reaction(Abstract_CBH_Reaction):
     '''
     Creates rung '0' of the CBH method for the creation
     of an potential error-canceling reaction.
