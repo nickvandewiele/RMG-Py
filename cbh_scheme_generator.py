@@ -224,8 +224,26 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         self.map_species_list(self.error_reaction.products, spc_list)
     
+    def createCBH0Product(self, atom):
+        return makeSpeciesFromSMILES(atom.symbol)
+    
     def populate_reactants(self):
-        pass          
+        '''
+        Each pair of adjacent heavy-atom bonds (products in cbh-1)
+        shares a common heavy-atom  
+        (as reactants in chb-1 as well as products in cbh-0) 
+        '''
+        spc_list = []
+        
+        #iterate over all heavy-atom bonds:
+        molecule = self.spc.molecule[0]
+        
+        for atom in molecule.atoms:
+            if not atom.symbol == 'H':
+                reactant = self.createCBH0Product(atom)
+                spc_list.append(reactant)
+        
+        self.map_species_list(self.error_reaction.reactants, spc_list)
     
     
 if __name__ == '__main__':
