@@ -42,7 +42,7 @@ class TestCBH0(Abstract_CBH):
     def __init__(self, *args, **kwargs):
             super(self.__class__, self).__init__(*args, **kwargs)
  
-    def runCBH0(self,smi, s):
+    def runCBH(self,smi, s):
         spc = gen.makeSpeciesFromSMILES(smi)
         cbh = gen.CBH0Reaction(spc=spc)
         self.runAbstract(cbh, s)
@@ -50,26 +50,26 @@ class TestCBH0(Abstract_CBH):
     def testCPD(self):
         smi = 'C1=CCC=C1'
         s = '{1}C1=CCC=C1 + {7}[H][H] <=> {5}C'
-        self.runCBH0(smi, s)
+        self.runCBH(smi, s)
         
     def testOxazoline(self):
         smi = 'C1CN=CO1'
         s = '{1}C1CN=CO1 + {6}[H][H] <=> {3}C + {1}N + {1}O'
-        self.runCBH0(smi,s)
+        self.runCBH(smi,s)
 
     def testNHeptanethiol(self):
         smi = 'C(CCCC)CCS'
         s = '{1}C(CCCC)CCS + {7}[H][H] <=> {7}C + {1}S'
-        self.runCBH0(smi, s)
+        self.runCBH(smi, s)
         
     def testCyclohexanone(self):
         smi = 'C1CCC(=O)CC1'
         s = '{1}C1CCC(=O)CC1 + {8}[H][H] <=> {6}C + {1}O'
-        self.runCBH0(smi, s)
+        self.runCBH(smi, s)
         
 class TestCBH1(Abstract_CBH):
             
-    def runCBH1(self,smi, s):
+    def runCBH(self,smi, s):
         spc = gen.makeSpeciesFromSMILES(smi)
         cbh = gen.CBH1Reaction(spc=spc)
         self.runAbstract(cbh, s)
@@ -77,23 +77,50 @@ class TestCBH1(Abstract_CBH):
     def testCPD(self):
         smi = 'C1C=CC=C1'
         s = '{1}C1C=CC=C1 + {5}C <=> {3}CC + {2}C=C'
-        self.runCBH1(smi,s)
+        self.runCBH(smi,s)
 
     def testOxazoline(self):
         smi = 'C1CN=CO1'
         s = '{1}C1CN=CO1 + {3}C + {1}N + {1}O <=> {1}CC + {2}CO + {1}CN + {1}C=N'
-        self.runCBH1(smi, s)
+        self.runCBH(smi, s)
 
     def testNHeptanethiol(self):
         smi = 'C(CCCC)CCS'
         s = '{1}C(CCCC)CCS + {6}C <=> {6}CC + {1}CS'
-        self.runCBH1(smi, s)
+        self.runCBH(smi, s)
         
     def testCyclohexanone(self):
         smi = 'C1CCC(=O)CC1'
         s = '{1}C1CCC(=O)CC1 + {7}C <=> {6}CC + {1}C=O'
-        self.runCBH1(smi, s)
+        self.runCBH(smi, s)
+
+class TestCBH2(Abstract_CBH):
+            
+    def runCBH(self,smi, s):
+        spc = gen.makeSpeciesFromSMILES(smi)
+        cbh = gen.CBH2Reaction(spc=spc)
+        self.runAbstract(cbh, s)
+    
+    def testCPD(self):
+        smi = 'C1C=CC=C1'
+        s = '{1}C1C=CC=C1 + {3}CC + {2}C=C <=> {1}CCC + {4}CC=C'
+        self.runCBH(smi,s)
+
+    def testOxazoline(self):
+        smi = 'C1CN=CO1'
+        s = '{1}C1CN=CO1 + {1}CC + {2}CO + {1}C=N <=> {1}CCN + {1}CCO + {1}OC=N + {1}CN=C + {1}COC'
+        self.runCBH(smi, s)
+
+    def testNHeptanethiol(self):
+        smi = 'C(CCCC)CCS'
+        s = '{1}C(CCCC)CCS + {5}CC <=> {5}CCC + {1}CCS'
+        self.runCBH(smi, s)
         
+    def testCyclohexanone(self):
+        smi = 'C1CCC(=O)CC1'
+        s = '{1}C1CCC(=O)CC1 + {6}CC <=> {5}CCC + {1}CC(=O)C'
+        self.runCBH(smi, s)
+                
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

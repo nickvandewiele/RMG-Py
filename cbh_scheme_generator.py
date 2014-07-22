@@ -261,7 +261,6 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         self.map_species_list(self.error_reaction.products, spc_list)
     
-    
     def exclude_terminal_atoms(self, molecule, atoms):
         '''
                 
@@ -320,16 +319,73 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         atoms = self.account_for_branching(molecule, atoms)
         
         for atom in atoms:
-            reactant = self.createCBH0Product(atom)
+            reactant = CBHSpeciesGenerator().create_cbh0_product(atom)
             spc_list.append(reactant)
         
         self.map_species_list(self.error_reaction.reactants, spc_list)
+
+class CBH2Reaction(Abstract_CBH_Reaction):
+    '''
+    Creates rung '2' of the CBH method for the creation
+    of an potential error-canceling reaction.
     
+    Corresponds to the simplest hypohomodesmotic reaction scheme
+    developed by Wheeler et al. 
     
+    Another, more appropriate, illuminative name is isoatomic scheme.
+    '''  
+    def __init__(self, spc):
+        super(self.__class__, self).__init__(spc)
+    
+    def populate_products(self):  
+        '''
+        Preserve atom environment of atoms.
+        '''
+
+        spc_list = []
+
+        #iterate over all heavy-atom bonds:
+        molecule = self.spc.molecule[0]
+        atoms = self.exclude_hydrogens(molecule.atoms)
+        
+        for atom in atoms:
+            neighbors = [atom2 for atom2 in atom.edges]
+            neighbors = self.exclude_hydrogens(neighbors)
+            product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
+            spc_list.append(product)
+        
+        self.map_species_list(self.error_reaction.products, spc_list)
+
+        
+    def populate_reactants(self):
+        '''
+        Each pair of adjacent heavy-atom atoms
+        preserving their immediate environment (products in cbh-2) shares 
+        a common heavy-atom bond 
+        (reactants in cbh2 as well as products in cbh-1)
+
+        '''
+        spc_list = []
+        
+        molecule = self.spc.molecule[0]
+        
+        #iterate over all heavy-atom bonds:
+        molecule.sortAtoms()
+        for atom1 in molecule.vertices:
+            for atom2 in atom1.edges:
+                if not atom1.symbol == 'H' and not atom2.symbol == 'H': 
+                    if atom1.sortingLabel < atom2.sortingLabel:
+                        bond = molecule.getBond(atom1, atom2)
+                        reactant = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
+                        spc_list.append(reactant)
+        
+        self.map_species_list(self.error_reaction.reactants, spc_list)
+        
+        
 if __name__ == '__main__':
-    spc = makeSpeciesFromSMILES('C1CCC(=O)CC1')
+    spc = makeSpeciesFromSMILES('C1C=CC=C1')
     #mol = makeSpecies('C')
-    cbh1 = CBH1Reaction(spc=spc)
-    cbh1.run()
-    rxn =  cbh1.error_reaction
+    cbh = CBH2Reaction(spc=spc)
+    cbh.run()
+    rxn =  cbh.error_reaction
     print rxn.coefficients
