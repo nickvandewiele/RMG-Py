@@ -652,7 +652,20 @@ class Molecule(Graph):
         Returns the bond connecting atoms `atom1` and `atom2`.
         """
         return self.getEdge(atom1, atom2)
-
+    def getAllBonds(self):
+        """
+        Returns a list of unique bonds.
+        """
+        bonds = []
+        self.sortAtoms()
+        for atom1 in self.atoms:
+            for atom2 in self.atoms:
+                    if self.hasBond(atom1, atom2):
+                        if atom1.sortingLabel < atom2.sortingLabel:
+                            bond = self.getBond(atom1, atom2)
+                            bonds.append(bond)
+        return bonds
+    
     def hasAtom(self, atom):
         """
         Returns ``True`` if `atom` is an atom in the graph, or ``False`` if

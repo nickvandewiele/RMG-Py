@@ -982,7 +982,9 @@ class TestMolecule(unittest.TestCase):
         This is a "hard" test that currently fails.
         """
         self.assertEqual(Molecule().fromSMILES('CC#CC').countInternalRotors(), 1)
-
+    
+    def testGetAllBonds(self):
+        self.assertEqual(len(self.molecule.getAllBonds()), 5)
 ################################################################################
 
 if __name__ == '__main__':
