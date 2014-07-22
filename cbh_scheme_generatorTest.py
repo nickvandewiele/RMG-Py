@@ -25,21 +25,28 @@ def read_reaction_string(s):
             d[label] = int(index)
 
         return d
-    
-class TestCBH0(unittest.TestCase):
-    
+
+class Abstract_CBH(unittest.TestCase):
+                
     def check(self, d, rxn):
         for label, index in d.iteritems():
             self.assertEquals(rxn.coefficients[label], index)
-            
+    
+    def runAbstract(self, cbh, s):
+        d = read_reaction_string(s)
+        cbh.run()
+        rxn =  cbh.error_reaction
+        self.check(d, rxn)
+        
+class TestCBH0(Abstract_CBH):
+    def __init__(self, *args, **kwargs):
+            super(self.__class__, self).__init__(*args, **kwargs)
+ 
     def runCBH0(self,smi, s):
         spc = gen.makeSpeciesFromSMILES(smi)
-        cbh0 = gen.CBH0Reaction(spc=spc)
-        cbh0.run()
-        rxn =  cbh0.error_reaction
-        d = read_reaction_string(s)   
-        self.check(d, rxn)
-    
+        cbh = gen.CBH0Reaction(spc=spc)
+        self.runAbstract(cbh, s)
+        
     def testCPD(self):
         smi = 'C1=CCC=C1'
         s = '{1}C1=CCC=C1 + {7}[H][H] <=> {5}C'
@@ -60,18 +67,12 @@ class TestCBH0(unittest.TestCase):
         s = '{1}C1CCC(=O)CC1 + {8}[H][H] <=> {6}C + {1}O'
         self.runCBH0(smi, s)
         
-class TestCBH1(unittest.TestCase):
-    def check(self, d, rxn):
-        for label, index in d.iteritems():
-            self.assertEquals(rxn.coefficients[label], index)
+class TestCBH1(Abstract_CBH):
             
     def runCBH1(self,smi, s):
         spc = gen.makeSpeciesFromSMILES(smi)
-        cbh1 = gen.CBH1Reaction(spc=spc)
-        cbh1.run()
-        rxn =  cbh1.error_reaction
-        d = read_reaction_string(s)   
-        self.check(d, rxn)
+        cbh = gen.CBH1Reaction(spc=spc)
+        self.runAbstract(cbh, s)
     
     def testCPD(self):
         smi = 'C1C=CC=C1'
