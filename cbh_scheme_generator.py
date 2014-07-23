@@ -259,21 +259,6 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         self.map_species_list(self.error_reaction.products, spc_list)
     
-    def exclude_terminal_atoms(self, molecule, atoms):
-        '''
-                
-        Terminal atoms in the reactant only have atom neighbor so there is
-        no overlap of in products. As a result, exclude terminal atoms. 
-        '''
-        filtered = []
-        molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in atoms:
-            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
-            if len(neighbours) > 1:
-                filtered.append(atom1)
-                
-        return filtered
-    
     def account_for_branching(self, molecule, atoms):
         '''
         Atoms with more than two heavy-atom neighbors will 
@@ -312,8 +297,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         #iterate over all heavy-atom bonds:
         molecule = self.spc.molecule[0]
         
-        atoms = self.exclude_terminal_atoms(molecule, molecule.atoms)
-        atoms = exclude_hydrogens(atoms)
+        atoms = exclude_hydrogens(molecule.atoms)
         atoms = self.account_for_branching(molecule, atoms)
         
         for atom in atoms:
