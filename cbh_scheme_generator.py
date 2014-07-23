@@ -16,6 +16,34 @@ def exclude_hydrogens(atoms):
 def isTerminalAtom(atom):
     neighbors = exclude_hydrogens([atom1 for atom1 in atom.edges])
     return len(neighbors) < 2
+
+def account_for_branching(molecule, atoms):
+        '''
+        Atoms with more than two heavy-atom neighbors will 
+        not be overcounted once, but more than once.
+        
+        E.g.
+        - a  secondary (non-branched) carbon atom will
+        be overcounted once. 
+        - a tertiary carbon atom (branched 'once') will
+        be overcounted twice.
+        
+        Generally, the number of reactants per heavy atom 
+        that needs to be added to balance the equation
+        follows the following formula:
+        
+        n = no. of heavy atom neighbors - 1
+        
+        
+        '''
+        filtered = []
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in atoms:
+            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            filtered.extend([atom1 for _ in range(len(neighbours)-1)])
+                
+        return filtered
+    
 def makeSpeciesFromMolecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
@@ -262,32 +290,6 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         
         self.map_species_list(self.error_reaction.products, spc_list)
     
-    def account_for_branching(self, molecule, atoms):
-        '''
-        Atoms with more than two heavy-atom neighbors will 
-        not be overcounted once, but more than once.
-        
-        E.g.
-        - a  secondary (non-branched) carbon atom will
-        be overcounted once. 
-        - a tertiary carbon atom (branched 'once') will
-        be overcounted twice.
-        
-        Generally, the number of reactants per heavy atom 
-        that needs to be added to balance the equation
-        follows the following formula:
-        
-        n = no. of heavy atom neighbors - 1
-        
-        
-        '''
-        filtered = []
-        molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in atoms:
-            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
-            filtered.extend([atom1 for _ in range(len(neighbours)-1)])
-                
-        return filtered
     def populate_reactants(self):
         '''
         Each pair of adjacent heavy-atom bonds (products in cbh-1)
@@ -301,7 +303,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         molecule = self.spc.molecule[0]
         
         atoms = exclude_hydrogens(molecule.atoms)
-        atoms = self.account_for_branching(molecule, atoms)
+        atoms = account_for_branching(molecule, atoms)
         
         for atom in atoms:
             reactant = CBHSpeciesGenerator().create_cbh0_product(atom)
@@ -336,8 +338,11 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         for atom in atoms:
             neighbors = [atom2 for atom2 in atom.edges]
             neighbors = exclude_hydrogens(neighbors)
-            product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
-            spc_list.append(product)
+            if isTerminalAtom(atom):#don't include terminal atoms
+                pass
+            else:
+                product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
+                spc_list.append(product)
         
         self.map_species_list(self.error_reaction.products, spc_list)
 
