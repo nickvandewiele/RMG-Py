@@ -364,10 +364,11 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         for atom1 in molecule.vertices:
             for atom2 in atom1.edges:
                 if not atom1.symbol == 'H' and not atom2.symbol == 'H': 
-                    if atom1.sortingLabel < atom2.sortingLabel:
-                        bond = molecule.getBond(atom1, atom2)
-                        reactant = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
-                        spc_list.append(reactant)
+                    if not isTerminalAtom(atom1) and not isTerminalAtom(atom2):# do not include terminal atoms
+                        if atom1.sortingLabel < atom2.sortingLabel:
+                            bond = molecule.getBond(atom1, atom2)
+                            reactant = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
+                            spc_list.append(reactant)
         
         self.map_species_list(self.error_reaction.reactants, spc_list)
         
