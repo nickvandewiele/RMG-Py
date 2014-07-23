@@ -29,8 +29,8 @@ def read_reaction_string(s):
 class Abstract_CBH(unittest.TestCase):
                 
     def check(self, d, rxn):
-        for label, index in d.iteritems():
-            self.assertEquals(rxn.coefficients[label], index)
+        shared_items = set(d.items()) & set(rxn.coefficients.items())
+        self.assertEquals(len(shared_items), max(len(d), len(rxn.coefficients)))
     
     def runAbstract(self, cbh, s):
         d = read_reaction_string(s)
