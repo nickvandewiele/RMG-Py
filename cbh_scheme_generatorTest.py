@@ -108,7 +108,7 @@ class TestCBH2(Abstract_CBH):
 
     def testOxazoline(self):
         smi = 'C1CN=CO1'
-        s = '{1}C1CN=CO1 + {1}CC + {2}CO + {1}C=N <=> {1}C(C)N + {1}CCO + {1}C(=N)O + {1}CN=C + {1}COC'
+        s = '{1}C1CN=CO1 + {1}CC + {2}CO + {1}CN + {1}C=N <=> {1}C(C)N + {1}CCO + {1}C(=N)O + {1}CN=C + {1}COC'
         self.runCBH(smi, s)
 
     def testNHeptanethiol(self):
