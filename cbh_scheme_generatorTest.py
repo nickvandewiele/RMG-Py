@@ -103,12 +103,12 @@ class TestCBH2(Abstract_CBH):
     
     def testCPD(self):
         smi = 'C1C=CC=C1'
-        s = '{1}C1C=CC=C1 + {3}CC + {2}C=C <=> {1}CCC + {4}CC=C'
+        s = '{1}C1C=CC=C1 + {3}CC + {2}C=C <=> {1}CCC + {4}C=CC'
         self.runCBH(smi,s)
 
     def testOxazoline(self):
         smi = 'C1CN=CO1'
-        s = '{1}C1CN=CO1 + {1}CC + {2}CO + {1}C=N <=> {1}CCN + {1}CCO + {1}OC=N + {1}CN=C + {1}COC'
+        s = '{1}C1CN=CO1 + {1}CC + {2}CO + {1}C=N <=> {1}C(C)N + {1}CCO + {1}C(=N)O + {1}CN=C + {1}COC'
         self.runCBH(smi, s)
 
     def testNHeptanethiol(self):
@@ -118,7 +118,7 @@ class TestCBH2(Abstract_CBH):
         
     def testCyclohexanone(self):
         smi = 'C1CCC(=O)CC1'
-        s = '{1}C1CCC(=O)CC1 + {6}CC <=> {5}CCC + {1}CC(=O)C'
+        s = '{1}C1CCC(=O)CC1 + {6}CC <=> {5}CCC + {1}CC(C)=O'
         self.runCBH(smi, s)
                 
 if __name__ == "__main__":
