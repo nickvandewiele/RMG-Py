@@ -13,6 +13,9 @@ from rmgpy.rmg.model import CoreEdgeReactionModel
 def exclude_hydrogens(atoms):
         return [atom for atom in atoms if not atom.symbol == 'H']
 
+def isTerminalAtom(atom):
+    neighbors = exclude_hydrogens([atom1 for atom1 in atom.edges])
+    return len(neighbors) < 2
 def makeSpeciesFromMolecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
