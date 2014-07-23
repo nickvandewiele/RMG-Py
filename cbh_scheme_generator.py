@@ -72,6 +72,72 @@ class ErrorCancellingReaction(Reaction):
 class CBHSpeciesGenerator(object):
     def __init__(self):
         pass
+    
+    def determine_index(self, atom, index_map, running_index):
+        '''
+        This method looks up in the parameter map 'index_map' whether
+        the parameter atom 'atom' has already an index assigned to it.
+        
+        If so, the return that value, and don't change the value of the
+        parameter 'running_index'.
+        
+        If that atom was not yet encountered, then we will assign it 
+        a new value, equal to the value of 'running_index'+1.
+        
+        Eventually, we would like to return the retrieved (or generated)
+        index of the parameter atom AND
+        the updated value of the 'running_index'.
+        '''
+        if atom in index_map.keys():
+            index =  index_map[atom]
+        else:
+            running_index += 1#update
+            index = running_index#assign the index to the updated value
+            index_map[atom] = index#put that newly encountered atom in the map
+            
+        return index, running_index
+    
+    def write_connectivity_cbh3_product(self, central_atom, adjacent_to_central_atom, indices, running_index, molecule, lines):
+        '''
+        This method takes a central atom and will do two things to build a part of the adjacency list:
+        
+        1) it will create a line with the connectivity info of the central atom
+        E.g.:
+        
+        1 C 0 0 {2,S} {3,S}
+        
+        2) it will create a line with the connectivity info the neighbors of that central atom,
+        excluding that one atom that is 'special', i.e. the variable 'adjacent_to_central_atom'.
+        E.g.:
+        
+        3 C 0 0 {1,S}
+        
+        This method has to retrieve the indices of the neighboring atoms of the central atoms,
+        and delegates the retrieval of the index of that atom to another method.
+        
+        
+        '''
+        #find the neighbors of the central atom, except that one 'special' neighbor:
+        other_neighbors = [atom for atom in central_atom.edges if not atom == adjacent_to_central_atom]
+        other_neighbors = exclude_hydrogens(other_neighbors)
+        
+        #create the 
+        connectivity = '{'+str(indices[adjacent_to_central_atom])+','+molecule.getBond(central_atom, adjacent_to_central_atom).order+'}'
+        for neigh in other_neighbors:
+            order = molecule.getBond(central_atom, neigh).order
+            index, running_index = self.determine_index(neigh, indices, running_index)
+            connectivity = ' '.join([connectivity, '{'+str(index)+','+order+'}'])
+            line = ' '.join([str(index),neigh.symbol,str(neigh.radicalElectrons),str(neigh.lonePairs),'{'+str(indices[central_atom])+','+order+'}'])
+            lines.append(line)
+        
+        #create the line of the central atom:
+        line_central_atom = ' '.join([str(indices[central_atom]),central_atom.symbol,str(central_atom.radicalElectrons),str(central_atom.lonePairs), connectivity])
+        
+        #inserts line of central atom at the top of the adjacency list, or just the 2nd line:
+        lines.insert(indices[central_atom]-1, line_central_atom) 
+    
+        return running_index
+    
     def createAdjacencyList_cbh1_product(self, atom1, atom2, bond):
         order = bond.order
         first_line = '1 '+atom1.symbol+' '+str(atom1.radicalElectrons)+' '+ str(atom1.lonePairs) +' {2,'+order+'}'
@@ -95,6 +161,35 @@ class CBHSpeciesGenerator(object):
         lines.insert(0, first_line)
         
         return '\n'.join(lines)
+
+    
+    def createAdjacencyList_cbh3_product(self, atom1, atom2, molecule):
+        lines = []
+    
+        
+        '''
+        the variable 'indices' is a map that keeps track of the assigned indices to the 
+        2 central atoms, and their neighbors.
+        
+        E.g.:
+        
+        the neighbor of atom1 will be assigned index '3', which should be stored,
+        in case atom2 is also connected to that same atom.
+        '''
+        #we initiate the map with the values for the indices of the atoms in the 
+        #new adjacency list we already know:
+        indices = {
+                     atom1 : 1,
+                     atom2 : 2
+                     }
+        
+        #initialize the running index:
+        running_index = 2 #the two central atoms will have index '1' and '2'
+        
+        running_index = self.write_connectivity_cbh3_product(atom1, atom2, indices, running_index, molecule, lines)
+        running_index = self.write_connectivity_cbh3_product(atom2, atom1, indices, running_index, molecule, lines)
+        
+        return '\n'.join(lines)
     
     def create_cbh0_product(self, atom):
         return makeSpeciesFromSMILES(atom.symbol)
@@ -107,6 +202,12 @@ class CBHSpeciesGenerator(object):
     
     def create_cbh2_product(self, atom, neighbors, molecule):
         adjList = self.createAdjacencyList_cbh2_product(atom, neighbors, molecule)#possibly a de-tour by creating adjList
+        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
+        product = makeSpeciesFromMolecule(mol)
+        return product
+    
+    def create_cbh3_product(self, atom1, atom2, molecule):
+        adjList = self.createAdjacencyList_cbh3_product(atom1, atom2, molecule)#possibly a de-tour by creating adjList
         mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
         product = makeSpeciesFromMolecule(mol)
         return product
@@ -373,12 +474,44 @@ class CBH2Reaction(Abstract_CBH_Reaction):
                             spc_list.append(reactant)
         
         self.map_species_list(self.error_reaction.reactants, spc_list)
+
+class CBH3Reaction(Abstract_CBH_Reaction):
+    '''
+    Creates rung '3' of the CBH method for the creation
+    of an potential error-canceling reaction.
+    
+    Corresponds to the simplest hyperhomodesmotic reaction scheme
+    developed by Wheeler et al., and preserve the immediate connectivity of all bonds in the molecule,
+    i.e. every heavy-atom bond is extracted maintaining its immediate connectivity.
+    '''  
+    def __init__(self, spc):
+        super(self.__class__, self).__init__(spc)
+    
+    def populate_products(self):  
+        spc_list = []
+
+        #iterate over all heavy-atom bonds:
+        molecule = self.spc.molecule[0]
         
+        #iterate over all unique non-hydrogen bonds of the Molecule:
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in molecule.vertices:
+            for atom2 in atom1.edges:
+                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
+                        if atom1.sortingLabel < atom2.sortingLabel:
+                            product = CBHSpeciesGenerator().create_cbh3_product(atom1, atom2, molecule)
+                            spc_list.append(product)
+        
+        self.map_species_list(self.error_reaction.products, spc_list)
+        
+    def populate_reactants(self):
+        pass
+         
         
 if __name__ == '__main__':
     spc = makeSpeciesFromSMILES('C1C=CC=C1')
     #mol = makeSpecies('C')
-    cbh = CBH2Reaction(spc=spc)
+    cbh = CBH3Reaction(spc=spc)
     cbh.run()
     rxn =  cbh.error_reaction
     print rxn.coefficients
