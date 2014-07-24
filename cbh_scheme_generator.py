@@ -272,7 +272,7 @@ class Abstract_CBH_Reaction(object):
     Connectivity-based Hierarchy error-canceling reaction classes.
     
     '''
-    def __init__(self, spc):
+    def __init__(self, spc=None):
         '''
         The constructor takes a Species object.
         '''
@@ -315,7 +315,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
     Creates rung '0' of the CBH method for the creation
     of an potential error-canceling reaction.
     '''  
-    def __init__(self, spc):
+    def __init__(self, spc=None):
         super(self.__class__, self).__init__(spc)
         
     def populate_products(self):
@@ -382,7 +382,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     
     Corresponds to the Pople's isodesmic bond separation scheme.
     '''  
-    def __init__(self, spc):
+    def __init__(self, spc=None):
         super(self.__class__, self).__init__(spc)
         
     def account_for_branching(self, molecule, atoms):
@@ -467,7 +467,7 @@ class CBH2Reaction(Abstract_CBH_Reaction):
     
     Another, more appropriate, illuminative name is isoatomic scheme.
     '''  
-    def __init__(self, spc):
+    def __init__(self, spc=None):
         super(self.__class__, self).__init__(spc)
     
     def populate_products(self):  
@@ -533,7 +533,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
     developed by Wheeler et al., and preserve the immediate connectivity of all bonds in the molecule,
     i.e. every heavy-atom bond is extracted maintaining its immediate connectivity.
     '''  
-    def __init__(self, spc):
+    def __init__(self, spc=None):
         super(self.__class__, self).__init__(spc)
     
     def account_for_branching(self, molecule, atoms):
