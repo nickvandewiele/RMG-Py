@@ -491,7 +491,14 @@ class CBH3Reaction(Abstract_CBH_Reaction):
     def __init__(self, spc):
         super(self.__class__, self).__init__(spc)
     
-    def populate_products(self):  
+    def populate_products(self): 
+        '''
+        
+        Bond centered method.
+        Preserve bond environment of each bond.
+        
+        Exclude terminal bonds, or bonds with hydrogen.
+        ''' 
         spc_list = []
 
         #iterate over all heavy-atom bonds:
@@ -502,6 +509,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
         for atom1 in molecule.vertices:
             for atom2 in atom1.edges:
                 if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
+                    if not isTerminalBond(atom1, atom2):# do not include terminal atoms
                         if atom1.sortingLabel < atom2.sortingLabel:
                             product = CBHSpeciesGenerator().create_cbh3_product(atom1, atom2, molecule)
                             spc_list.append(product)
