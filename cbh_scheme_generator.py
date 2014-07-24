@@ -291,45 +291,6 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         self.error_reaction.reactants.append(h2)
         self.error_reaction.coefficients[h2.label] = balancing_dihydrogen
     
-    
-    def populate_products_alt(self):
-        '''
-        An alternative, and less generic implementation of the method
-        that creates products according to the CBH-O rung.
-        '''
-        #create an element map with keys elements in the mol and values = no. of occurrences of that element
-        element_map = {}
-        supported_elements = 'CHONS'
-        
-        for element in supported_elements:
-            number = self.spc.molecule[0].getNumAtoms(element)
-            if number != 0:
-                element_map[element] = number 
-        
-        #iterate over the heavy atoms and create 'saturated' molecules:
-        for element, no_occurr in element_map.iteritems():
-            if not element == 'H': #heavy atoms
-                #create molecule from the element symbol (eg: 'C' becomes molecule methane)
-                product = makeSpeciesFromSMILES(element) 
-                self.error_reaction.products.append(product)#add to products list
-                self.error_reaction.coefficients[product.label] = no_occurr #update coefficient
-    
-    
-    def populate_reactants_alt(self):
-        '''
-        An alternative, and less generic implementation of the method
-        that creates reactants according to the CBH-O rung.
-        '''
-        #count no. of hydrogens in products:
-        h_count_prod = 0
-        for prod in self.error_reaction.products:
-            h_count_prod += prod.molecule[0].getNumAtoms('H') * self.error_reaction.coefficients[prod.label]
-        
-        #count no. of H2 molecules required as reactant for the H-element balance of the reaction:
-        balancing_dihydrogen = ( h_count_prod - self.spc.molecule[0].getNumAtoms('H') ) / 2
-        h2 = makeSpeciesFromSMILES('[H][H]')
-        self.error_reaction.reactants.append(h2)
-        self.error_reaction.coefficients[h2.label] = balancing_dihydrogen 
 
 class CBH1Reaction(Abstract_CBH_Reaction):
     '''
