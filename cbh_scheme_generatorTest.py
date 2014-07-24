@@ -93,6 +93,11 @@ class TestCBH1(Abstract_CBH):
         smi = 'C1CCC(=O)CC1'
         s = '{1}C1CCC(=O)CC1 + {7}C <=> {6}CC + {1}C=O'
         self.runCBH(smi, s)
+        
+    def testPropylPent4Enoate(self):
+        smi = 'C(COC(=O)CCC=C)C'
+        s = '{1}C(COC(=O)CCC=C)C + {7}C + {1}O <=> {5}CC + {1}C=C + {1}C=O + {2}CO'
+        self.runCBH(smi, s)
 
 class TestCBH2(Abstract_CBH):
             
@@ -120,6 +125,11 @@ class TestCBH2(Abstract_CBH):
         smi = 'C1CCC(=O)CC1'
         s = '{1}C1CCC(=O)CC1 + {6}CC <=> {5}CCC + {1}CC(C)=O'
         self.runCBH(smi, s)
+        
+    def testPropylPent4Enoate(self):
+        smi = 'C(COC(=O)CCC=C)C'
+        s = '{1}C(COC(=O)CCC=C)C + {4}CC + {2}CO <=> {3}CCC + {1}C=CC + {1}CC(=O)O + {1}COC + {1}CCO'
+        self.runCBH(smi, s)
  
 class TestCBH3(Abstract_CBH):
             
@@ -146,6 +156,11 @@ class TestCBH3(Abstract_CBH):
     def testCyclohexanone(self):
         smi = 'C1CCC(=O)CC1'
         s = '{1}C1CCC(=O)CC1 + {5}CCC + {1}CC(C)=O <=> {4}CCCC + {2}CCC(C)=O'
+        self.runCBH(smi, s)
+        
+    def testPropylPent4Enoate(self):
+        smi = 'C(COC(=O)CCC=C)C'
+        s = '{1}C(COC(=O)CCC=C)C + {2}CCC + {1}COC + {1}CCO + {1}CC(=O)O <=> {1}C=CCC + {1}CCCC + {1}CCC(=O)O + {1}COC(C)=O + {1}CCOC + {1}CCCO'
         self.runCBH(smi, s)
                 
 if __name__ == "__main__":
