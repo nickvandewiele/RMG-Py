@@ -99,6 +99,17 @@ class CBHSpeciesGenerator(object):
     def __init__(self):
         pass
     
+    def write_electron_info(self, atom):
+        '''
+        writes the part:
+        C 1 0 
+        
+        in:
+        
+        1 C 1 0 {2,S}{...}
+        '''
+        return ' '.join([atom.symbol,str(atom.radicalElectrons),str(atom.lonePairs)])
+                        
     def determine_index(self, atom, index_map, running_index):
         '''
         This method looks up in the parameter map 'index_map' whether
@@ -153,11 +164,13 @@ class CBHSpeciesGenerator(object):
             order = molecule.getBond(central_atom, neigh).order
             index, running_index = self.determine_index(neigh, indices, running_index)
             connectivity = ' '.join([connectivity, '{'+str(index)+','+order+'}'])
-            line = ' '.join([str(index),neigh.symbol,str(neigh.radicalElectrons),str(neigh.lonePairs),'{'+str(indices[central_atom])+','+order+'}'])
+            e_info = self.write_electron_info(neigh)
+            line = ' '.join([str(index),e_info,'{'+str(indices[central_atom])+','+order+'}'])
             lines.append(line)
         
         #create the line of the central atom:
-        line_central_atom = ' '.join([str(indices[central_atom]),central_atom.symbol,str(central_atom.radicalElectrons),str(central_atom.lonePairs), connectivity])
+        e_info = self.write_electron_info(central_atom)
+        line_central_atom = ' '.join([str(indices[central_atom]),e_info, connectivity])
         
         #inserts line of central atom at the top of the adjacency list, or just the 2nd line:
         lines.insert(indices[central_atom]-1, line_central_atom) 
@@ -166,21 +179,25 @@ class CBHSpeciesGenerator(object):
     
     def createAdjacencyList_cbh1_product(self, atom1, atom2, bond):
         order = bond.order
-        first_line = '1 '+atom1.symbol+' '+str(atom1.radicalElectrons)+' '+ str(atom1.lonePairs) +' {2,'+order+'}'
-        second_line = '2 '+atom2.symbol+' '+str(atom2.radicalElectrons)+' '+ str(atom2.lonePairs) +' {1,'+order+'}'
+        e_info = self.write_electron_info(atom1)
+        first_line = '1 '+e_info+' {2,'+order+'}'
+        e_info = self.write_electron_info(atom2)
+        second_line = '2 '+e_info+' {1,'+order+'}'
         adjList = first_line + '\n' + second_line
         
         return adjList
     
     def createAdjacencyList_cbh2_product(self, atom, neighbors, molecule):
         lines = []
-        first_line = ' '.join(['1',atom.symbol,str(atom.radicalElectrons),str(atom.lonePairs)])
+        e_info = self.write_electron_info(atom)
+        first_line = ' '.join(['1',e_info])
         connectivity = ''
         for i, neigh in enumerate(neighbors):
             order = molecule.getBond(atom, neigh).order
             index_neigh = str(i+2)#neighbours start at index 2
             connectivity += '{'+index_neigh+','+order+'} '
-            line = ' '.join([index_neigh,neigh.symbol,str(neigh.radicalElectrons),str(neigh.lonePairs),'{1,'+order+'}'])
+            e_info = self.write_electron_info(neigh)
+            line = ' '.join([index_neigh,e_info,'{1,'+order+'}'])
             lines.append(line)
             
         first_line += ' '+connectivity
