@@ -29,6 +29,12 @@ def read_reaction_string(s):
 class Abstract_CBH(unittest.TestCase):
                 
     def check(self, d, rxn):
+        '''
+        TODO RMG-Py does not necessarily create the same SMILES as the one
+        we provided in the reaction string.
+        
+        Thus, occasionally there will be false failures among the unit tests! 
+        '''
         shared_items = set(d.items()) & set(rxn.coefficients.items())
         self.assertEquals(len(shared_items), max(len(d), len(rxn.coefficients)))
     

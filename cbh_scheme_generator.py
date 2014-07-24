@@ -4,12 +4,13 @@ Created on Jul 21, 2014
 @author: nickvandewiele
 '''
 
-import os
-
 from rmgpy.molecule import Molecule
 from rmgpy.reaction import Reaction
-from rmgpy.rmg.model import CoreEdgeReactionModel
+from rmgpy.rmg.model import CoreEdgeReactionModel#TODO ideally, we don't want to use CoreEdgeReactionModel
 
+#####################################################################
+#   Utiliy Methods
+#####################################################################
 def exclude_hydrogens(atoms):
         return [atom for atom in atoms if not atom.symbol == 'H']
 
@@ -79,7 +80,11 @@ def exclude_terminal_bonds(bonds):
         else:
             filtered.append(b)
     return filtered            
-    
+
+
+#####################################################################
+
+
 class ErrorCancellingReaction(Reaction):
     '''
     Adds a coefficients dictionary as an extra attribute to
@@ -96,6 +101,16 @@ class ErrorCancellingReaction(Reaction):
             
             
 class CBHSpeciesGenerator(object):
+    '''
+    TODO Ideally we want to create species WITHOUT having the create
+    a de-tour by writing an adjacency list that is then parsed again.
+    
+    However, because of the difficulty of creating molecules in RMG-Py
+    i.e., there are no wrapper methods like 'molecule.addBond(atom1, atom2) that
+    will do the 'dirty' accounting (e.g. index updating, atom typing, etc...)
+    for me, I resort to creating adjacency lists instead.
+     
+    '''
     def __init__(self):
         pass
     
@@ -157,8 +172,7 @@ class CBHSpeciesGenerator(object):
         #find the neighbors of the central atom, except that one 'special' neighbor:
         other_neighbors = [atom for atom in central_atom.edges if not atom == adjacent_to_central_atom]
         other_neighbors = exclude_hydrogens(other_neighbors)
-        
-        #create the 
+
         connectivity = '{'+str(indices[adjacent_to_central_atom])+','+molecule.getBond(central_atom, adjacent_to_central_atom).order+'}'
         for neigh in other_neighbors:
             order = molecule.getBond(central_atom, neigh).order
