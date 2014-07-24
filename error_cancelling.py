@@ -125,7 +125,7 @@ def parse_error_cancelling_reaction(label, reactants, products, coefficients):
     error_reaction = rxn
     return rxn
     
-def parse_input(path, rmg0):
+def parse_input_user_defined_reaction(path, rmg0):
     """
     Read an error cancelling reaction input file at `path` on disk into the :class:`RMG` object 
     `rmg`.
@@ -171,7 +171,7 @@ def parse_input(path, rmg0):
     logging.info('')    
 ################################################################################
 
-def read_input(inputFile):
+def read_input_user_defined_reaction(inputFile):
     '''
     Reads input on:
     * parse_species whose enthalpy of formation is to be estimated
@@ -183,7 +183,8 @@ def read_input(inputFile):
 
     if not rmg.outputDirectory:
         rmg.outputDirectory = os.path.dirname(inputFile)
-    parse_input(inputFile, rmg)
+        
+    parse_input_user_defined_reaction(inputFile, rmg)
         
     if rmg.quantumMechanics:
         rmg.quantumMechanics.setDefaultOutputDirectory(rmg.outputDirectory)
@@ -245,7 +246,7 @@ def calculate_improved_enthalpy(DHr):
 def run(inputFile):
     global error_reaction
     
-    read_input(inputFile)
+    read_input_user_defined_reaction(inputFile)
     logging.info('QM Enthalpy of Formation: ')
     calculate_QM_thermo()
     
