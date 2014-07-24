@@ -18,33 +18,6 @@ def isTerminalAtom(atom):
     return len(neighbors) < 2
 def isTerminalBond(atom1, atom2):
     return isTerminalAtom(atom1) or isTerminalAtom(atom2)
-
-def account_for_branching(molecule, atoms):
-        '''
-        Atoms with more than two heavy-atom neighbors will 
-        not be overcounted once, but more than once.
-        
-        E.g.
-        - a  secondary (non-branched) carbon atom will
-        be overcounted once. 
-        - a tertiary carbon atom (branched 'once') will
-        be overcounted twice.
-        
-        Generally, the number of reactants per heavy atom 
-        that needs to be added to balance the equation
-        follows the following formula:
-        
-        n = no. of heavy atom neighbors - 1
-        
-        
-        '''
-        filtered = []
-        molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in atoms:
-            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
-            filtered.extend([atom1 for _ in range(len(neighbours)-1)])
-                
-        return filtered
     
 def makeSpeciesFromMolecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
@@ -368,6 +341,32 @@ class CBH1Reaction(Abstract_CBH_Reaction):
     def __init__(self, spc):
         super(self.__class__, self).__init__(spc)
         
+    def account_for_branching(self, molecule, atoms):
+        '''
+        Atoms with more than two heavy-atom neighbors will 
+        not be overcounted once, but more than once.
+        
+        E.g.
+        - a  secondary (non-branched) carbon atom will
+        be overcounted once. 
+        - a tertiary carbon atom (branched 'once') will
+        be overcounted twice.
+        
+        Generally, the number of reactants per heavy atom 
+        that needs to be added to balance the equation
+        follows the following formula:
+        
+        n = no. of heavy atom neighbors - 1
+        
+        
+        '''
+        filtered = []
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in atoms:
+            neighbours = exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            filtered.extend([atom1 for _ in range(len(neighbours)-1)])
+                
+        return filtered
         
     def populate_products(self):  
         '''
@@ -406,7 +405,7 @@ class CBH1Reaction(Abstract_CBH_Reaction):
         molecule = self.spc.molecule[0]
         
         atoms = exclude_hydrogens(molecule.atoms)
-        atoms = account_for_branching(molecule, atoms)
+        atoms = self.account_for_branching(molecule, atoms)
         
         for atom in atoms:
             reactant = CBHSpeciesGenerator().create_cbh0_product(atom)
@@ -429,15 +428,18 @@ class CBH2Reaction(Abstract_CBH_Reaction):
     
     def populate_products(self):  
         '''
+        Atom centered method. 
         Preserve atom environment of atoms.
+        
+        Exclude terminal atoms or hydrogens.
         '''
 
         spc_list = []
-
-        #iterate over all heavy-atom bonds:
+        
         molecule = self.spc.molecule[0]
         atoms = exclude_hydrogens(molecule.atoms)
         
+        #iterate over all heavy-atom atoms:
         for atom in atoms:
             neighbors = [atom2 for atom2 in atom.edges]
             neighbors = exclude_hydrogens(neighbors)
@@ -456,6 +458,8 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         preserving their immediate environment (products in cbh-2) shares 
         a common heavy-atom bond 
         (reactants in cbh2 as well as products in cbh-1)
+        
+        Exclude terminal bonds, or bonds with hydrogen.
 
         '''
         spc_list = []
@@ -466,7 +470,7 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         molecule.sortAtoms()
         for atom1 in molecule.vertices:
             for atom2 in atom1.edges:
-                if not atom1.symbol == 'H' and not atom2.symbol == 'H':
+                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#bonds with hydrogen
                     if not isTerminalBond(atom1, atom2):# do not include terminal atoms
                         if atom1.sortingLabel < atom2.sortingLabel:
                             bond = molecule.getBond(atom1, atom2)
