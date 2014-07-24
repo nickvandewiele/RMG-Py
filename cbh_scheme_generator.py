@@ -491,6 +491,47 @@ class CBH3Reaction(Abstract_CBH_Reaction):
     def __init__(self, spc):
         super(self.__class__, self).__init__(spc)
     
+    def is_connected_to_terminal_bond(self, atom):
+        '''
+        If any of its neighboring atoms is a terminal atom,
+        this method returns True.
+    
+        '''
+        atoms = [atom2 for atom2 in atom.edges if not atom2.symbol == 'H']
+        for atom2 in atoms:
+            if isTerminalAtom(atom2):
+                return True
+            
+        return False
+    
+    
+    def account_for_branching(self, molecule, atoms):
+        '''
+        
+        Generally, the number of reactants per heavy atom 
+        that needs to be added to balance the equation
+        follows the following formula:
+        
+        n = no. of heavy atom neighbors
+            - 1 (if atom belongs to terminal bond)
+            - 1
+        
+        
+        '''
+        filtered = []
+        molecule.sortAtoms()#don't know if this is necessary.
+        for atom1 in atoms:
+            neighbors = exclude_hydrogens([atom2 for atom2 in atom1.edges])
+            
+            n = len(neighbors)-1#branching
+            if self.is_connected_to_terminal_bond(atom1):
+                n -= 1
+                
+            filtered.extend([atom1 for _ in range(n)])
+                
+        return filtered
+    
+    
     def populate_products(self): 
         '''
         
@@ -517,7 +558,24 @@ class CBH3Reaction(Abstract_CBH_Reaction):
         self.map_species_list(self.error_reaction.products, spc_list)
         
     def populate_reactants(self):
-        pass
+        '''
+        
+        Exclude hydrogens and account for branching.
+        '''
+        spc_list = []
+        
+        #iterate over all heavy-atom bonds:
+        molecule = self.spc.molecule[0]
+        
+        atoms = exclude_hydrogens(molecule.atoms)
+        atoms = self.account_for_branching(molecule, atoms)
+        
+        for atom in atoms:
+            neighbors = exclude_hydrogens([atom2 for atom2 in atom.edges])
+            reactant = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
+            spc_list.append(reactant)
+        
+        self.map_species_list(self.error_reaction.reactants, spc_list)
          
         
 if __name__ == '__main__':
