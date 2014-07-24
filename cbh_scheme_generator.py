@@ -14,11 +14,33 @@ def exclude_hydrogens(atoms):
         return [atom for atom in atoms if not atom.symbol == 'H']
 
 def isTerminalAtom(atom):
+    '''
+    This atom has less than 2 heavy atoms attached
+    '''
     neighbors = exclude_hydrogens([atom1 for atom1 in atom.edges])
     return len(neighbors) < 2
+
 def isTerminalBond(atom1, atom2):
     return isTerminalAtom(atom1) or isTerminalAtom(atom2)
+
+def is_connected_to_terminal_bond(atom):
+        '''
+        If any of its neighboring atoms is a terminal atom,
+        this method returns True.
     
+        '''
+        atoms = exclude_hydrogens(atom.edges)
+        for atom2 in atoms:
+            if isTerminalAtom(atom2):
+                return True
+            
+        return False
+
+def makeSpeciesFromAdjacencyList(adjList):
+    mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
+    product = makeSpeciesFromMolecule(mol)
+    return product
+
 def makeSpeciesFromMolecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
@@ -27,6 +49,37 @@ def makeSpeciesFromSMILES(smi):
     mol = Molecule().fromSMILES(smi)
     return makeSpeciesFromMolecule(mol, label=smi)
 
+def get_all_bonds(molecule):
+    bonds = []
+    for atom1 in molecule.vertices:
+            for atom2 in atom1.edges:
+                if atom1.sortingLabel < atom2.sortingLabel:
+                    bonds.append([atom1, atom2])
+    return bonds
+
+def exclude_hydrogen_bonds(bonds):
+    filtered = []
+    for bond in bonds:
+        contains_h = False
+        for atom in bond:
+            if atom.symbol == 'H':
+                contains_h = True
+                break
+        if not contains_h:
+            filtered.append(bond)
+            
+    return filtered
+
+def exclude_terminal_bonds(bonds):
+    filtered = []
+    for b in bonds:
+        atom1, atom2 = b[0], b[1]
+        if isTerminalBond(atom1, atom2):# do not include terminal atoms
+            pass
+        else:
+            filtered.append(b)
+    return filtered            
+    
 class ErrorCancellingReaction(Reaction):
     '''
     Adds a coefficients dictionary as an extra attribute to
@@ -169,20 +222,17 @@ class CBHSpeciesGenerator(object):
         
     def create_cbh1_product(self, atom1, atom2, bond):
         adjList = self.createAdjacencyList_cbh1_product(atom1, atom2, bond)#possibly a de-tour by creating adjList
-        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
-        product = makeSpeciesFromMolecule(mol)
+        product = makeSpeciesFromAdjacencyList(adjList)
         return product 
     
     def create_cbh2_product(self, atom, neighbors, molecule):
         adjList = self.createAdjacencyList_cbh2_product(atom, neighbors, molecule)#possibly a de-tour by creating adjList
-        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
-        product = makeSpeciesFromMolecule(mol)
+        product = makeSpeciesFromAdjacencyList(adjList)
         return product
     
     def create_cbh3_product(self, atom1, atom2, molecule):
         adjList = self.createAdjacencyList_cbh3_product(atom1, atom2, molecule)#possibly a de-tour by creating adjList
-        mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
-        product = makeSpeciesFromMolecule(mol)
+        product = makeSpeciesFromAdjacencyList(adjList)
         return product
     
 class Abstract_CBH_Reaction(object):
@@ -280,12 +330,14 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         
         #iterate over all unique non-hydrogen bonds of the Molecule:
         molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in molecule.vertices:
-            for atom2 in atom1.edges:
-                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
-                        if atom1.sortingLabel < atom2.sortingLabel:
-                            bond = molecule.getBond(atom1, atom2)
-                            balancing_dihydrogen += bond_orders[bond.order]
+        
+        bonds = get_all_bonds(molecule)
+        
+        bonds = exclude_hydrogen_bonds(bonds)
+        
+        for b in bonds:
+            bond = molecule.getBond(b[0], b[1])
+            balancing_dihydrogen += bond_orders[bond.order]
     
         h2 = makeSpeciesFromSMILES('[H][H]')
         self.error_reaction.reactants.append(h2)
@@ -404,9 +456,7 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         for atom in atoms:
             neighbors = [atom2 for atom2 in atom.edges]
             neighbors = exclude_hydrogens(neighbors)
-            if isTerminalAtom(atom):#don't include terminal atoms
-                pass
-            else:
+            if not isTerminalAtom(atom):#don't include terminal atoms
                 product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
                 spc_list.append(product)
         
@@ -429,14 +479,17 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         
         #iterate over all heavy-atom bonds:
         molecule.sortAtoms()
-        for atom1 in molecule.vertices:
-            for atom2 in atom1.edges:
-                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#bonds with hydrogen
-                    if not isTerminalBond(atom1, atom2):# do not include terminal atoms
-                        if atom1.sortingLabel < atom2.sortingLabel:
-                            bond = molecule.getBond(atom1, atom2)
-                            reactant = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
-                            spc_list.append(reactant)
+        
+        bonds = get_all_bonds(molecule)
+        
+        bonds = exclude_hydrogen_bonds(bonds)
+        
+        bonds = exclude_terminal_bonds(bonds)
+        for b in bonds:
+            atom1, atom2 = b[0], b[1]
+            bond = molecule.getBond(atom1, atom2)
+            reactant = CBHSpeciesGenerator().create_cbh1_product(atom1, atom2, bond)
+            spc_list.append(reactant)
         
         self.map_species_list(self.error_reaction.reactants, spc_list)
 
@@ -451,20 +504,6 @@ class CBH3Reaction(Abstract_CBH_Reaction):
     '''  
     def __init__(self, spc):
         super(self.__class__, self).__init__(spc)
-    
-    def is_connected_to_terminal_bond(self, atom):
-        '''
-        If any of its neighboring atoms is a terminal atom,
-        this method returns True.
-    
-        '''
-        atoms = [atom2 for atom2 in atom.edges if not atom2.symbol == 'H']
-        for atom2 in atoms:
-            if isTerminalAtom(atom2):
-                return True
-            
-        return False
-    
     
     def account_for_branching(self, molecule, atoms):
         '''
@@ -485,7 +524,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
             neighbors = exclude_hydrogens([atom2 for atom2 in atom1.edges])
             
             n = len(neighbors)-1#branching
-            if self.is_connected_to_terminal_bond(atom1):
+            if is_connected_to_terminal_bond(atom1):
                 n -= 1
                 
             filtered.extend([atom1 for _ in range(n)])
@@ -508,13 +547,16 @@ class CBH3Reaction(Abstract_CBH_Reaction):
         
         #iterate over all unique non-hydrogen bonds of the Molecule:
         molecule.sortAtoms()#don't know if this is necessary.
-        for atom1 in molecule.vertices:
-            for atom2 in atom1.edges:
-                if not atom1.symbol == 'H' and not atom2.symbol == 'H':#only bonds between heavy atoms
-                    if not isTerminalBond(atom1, atom2):# do not include terminal atoms
-                        if atom1.sortingLabel < atom2.sortingLabel:
-                            product = CBHSpeciesGenerator().create_cbh3_product(atom1, atom2, molecule)
-                            spc_list.append(product)
+        bonds = get_all_bonds(molecule)
+        
+        bonds = exclude_hydrogen_bonds(bonds)
+        
+        bonds = exclude_terminal_bonds(bonds)
+        
+        for b in bonds:
+            atom1, atom2 = b[0], b[1]
+            product = CBHSpeciesGenerator().create_cbh3_product(atom1, atom2, molecule)
+            spc_list.append(product)
         
         self.map_species_list(self.error_reaction.products, spc_list)
         
@@ -542,7 +584,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
 if __name__ == '__main__':
     spc = makeSpeciesFromSMILES('C1C=CC=C1')
     #mol = makeSpecies('C')
-    cbh = CBH3Reaction(spc=spc)
+    cbh = CBH0Reaction(spc=spc)
     cbh.run()
     rxn =  cbh.error_reaction
     print rxn.coefficients
