@@ -49,7 +49,7 @@ class TestCBH0(Abstract_CBH):
             super(self.__class__, self).__init__(*args, **kwargs)
  
     def runCBH(self,smi, s):
-        spc = gen.makeSpeciesFromSMILES(smi)
+        spc = gen.make_species_from_SMILES(smi)
         cbh = gen.CBH0Reaction(spc=spc)
         self.runAbstract(cbh, s)
         
@@ -76,7 +76,7 @@ class TestCBH0(Abstract_CBH):
 class TestCBH1(Abstract_CBH):
             
     def runCBH(self,smi, s):
-        spc = gen.makeSpeciesFromSMILES(smi)
+        spc = gen.make_species_from_SMILES(smi)
         cbh = gen.CBH1Reaction(spc=spc)
         self.runAbstract(cbh, s)
     
@@ -108,7 +108,7 @@ class TestCBH1(Abstract_CBH):
 class TestCBH2(Abstract_CBH):
             
     def runCBH(self,smi, s):
-        spc = gen.makeSpeciesFromSMILES(smi)
+        spc = gen.make_species_from_SMILES(smi)
         cbh = gen.CBH2Reaction(spc=spc)
         self.runAbstract(cbh, s)
     
@@ -140,7 +140,7 @@ class TestCBH2(Abstract_CBH):
 class TestCBH3(Abstract_CBH):
             
     def runCBH(self,smi, s):
-        spc = gen.makeSpeciesFromSMILES(smi)
+        spc = gen.make_species_from_SMILES(smi)
         cbh = gen.CBH3Reaction(spc=spc)
         self.runAbstract(cbh, s)
     

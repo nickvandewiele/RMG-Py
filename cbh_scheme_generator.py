@@ -14,15 +14,15 @@ from rmgpy.rmg.model import CoreEdgeReactionModel#TODO ideally, we don't want to
 def exclude_hydrogens(atoms):
         return [atom for atom in atoms if not atom.symbol == 'H']
 
-def isTerminalAtom(atom):
+def is_terminal_atom(atom):
     '''
     This atom has less than 2 heavy atoms attached
     '''
     neighbors = exclude_hydrogens([atom1 for atom1 in atom.edges])
     return len(neighbors) < 2
 
-def isTerminalBond(atom1, atom2):
-    return isTerminalAtom(atom1) or isTerminalAtom(atom2)
+def is_terminal_bond(atom1, atom2):
+    return is_terminal_atom(atom1) or is_terminal_atom(atom2)
 
 def is_connected_to_terminal_bond(atom):
         '''
@@ -32,23 +32,23 @@ def is_connected_to_terminal_bond(atom):
         '''
         atoms = exclude_hydrogens(atom.edges)
         for atom2 in atoms:
-            if isTerminalAtom(atom2):
+            if is_terminal_atom(atom2):
                 return True
             
         return False
 
-def makeSpeciesFromAdjacencyList(adjList):
+def make_species_from_adjacencyList(adjList):
     mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
-    product = makeSpeciesFromMolecule(mol)
+    product = make_species_from_molecule(mol)
     return product
 
-def makeSpeciesFromMolecule(mol, label=''):
+def make_species_from_molecule(mol, label=''):
     spc, isNew = CoreEdgeReactionModel().makeNewSpecies(mol, label=label)
     return spc
 
-def makeSpeciesFromSMILES(smi):
+def make_species_from_SMILES(smi):
     mol = Molecule().fromSMILES(smi)
-    return makeSpeciesFromMolecule(mol, label=smi)
+    return make_species_from_molecule(mol, label=smi)
 
 def get_all_bonds(molecule):
     bonds = []
@@ -75,7 +75,7 @@ def exclude_terminal_bonds(bonds):
     filtered = []
     for b in bonds:
         atom1, atom2 = b[0], b[1]
-        if isTerminalBond(atom1, atom2):# do not include terminal atoms
+        if is_terminal_bond(atom1, atom2):# do not include terminal atoms
             pass
         else:
             filtered.append(b)
@@ -249,21 +249,21 @@ class CBHSpeciesGenerator(object):
         return '\n'.join(lines)
     
     def create_cbh0_product(self, atom):
-        return makeSpeciesFromSMILES(atom.symbol)
+        return make_species_from_SMILES(atom.symbol)
         
     def create_cbh1_product(self, atom1, atom2, bond):
         adjList = self.createAdjacencyList_cbh1_product(atom1, atom2, bond)#possibly a de-tour by creating adjList
-        product = makeSpeciesFromAdjacencyList(adjList)
+        product = make_species_from_adjacencyList(adjList)
         return product 
     
     def create_cbh2_product(self, atom, neighbors, molecule):
         adjList = self.createAdjacencyList_cbh2_product(atom, neighbors, molecule)#possibly a de-tour by creating adjList
-        product = makeSpeciesFromAdjacencyList(adjList)
+        product = make_species_from_adjacencyList(adjList)
         return product
     
     def create_cbh3_product(self, atom1, atom2, molecule):
         adjList = self.createAdjacencyList_cbh3_product(atom1, atom2, molecule)#possibly a de-tour by creating adjList
-        product = makeSpeciesFromAdjacencyList(adjList)
+        product = make_species_from_adjacencyList(adjList)
         return product
     
 class Abstract_CBH_Reaction(object):
@@ -337,7 +337,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
         molecule = self.spc.molecule[0]
         heavy_atoms = exclude_hydrogens(molecule.atoms)
         for atom in heavy_atoms:#iterate over all atoms!
-            product = makeSpeciesFromSMILES(atom.symbol)
+            product = make_species_from_SMILES(atom.symbol)
             spc_list.append(product)
         
         self.map_species_list(self.error_reaction.products, spc_list)
@@ -370,7 +370,7 @@ class CBH0Reaction(Abstract_CBH_Reaction):
             bond = molecule.getBond(b[0], b[1])
             balancing_dihydrogen += bond_orders[bond.order]
     
-        h2 = makeSpeciesFromSMILES('[H][H]')
+        h2 = make_species_from_SMILES('[H][H]')
         self.error_reaction.reactants.append(h2)
         self.error_reaction.coefficients[h2.label] = balancing_dihydrogen
     
@@ -487,7 +487,7 @@ class CBH2Reaction(Abstract_CBH_Reaction):
         for atom in atoms:
             neighbors = [atom2 for atom2 in atom.edges]
             neighbors = exclude_hydrogens(neighbors)
-            if not isTerminalAtom(atom):#don't include terminal atoms
+            if not is_terminal_atom(atom):#don't include terminal atoms
                 product = CBHSpeciesGenerator().create_cbh2_product(atom, neighbors, molecule)
                 spc_list.append(product)
         
@@ -613,7 +613,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
          
         
 if __name__ == '__main__':
-    spc = makeSpeciesFromSMILES('C1C=CC=C1')
+    spc = make_species_from_SMILES('C1C=CC=C1')
     #mol = makeSpecies('C')
     cbh = CBH0Reaction(spc=spc)
     cbh.run()
