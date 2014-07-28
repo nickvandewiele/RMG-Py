@@ -422,7 +422,7 @@ class Bond(Edge):
 
     """
 
-    def __init__(self, atom1, atom2, order=1):
+    def __init__(self, atom1, atom2, order=1):#why integer 1 for order instead of string?
         Edge.__init__(self, atom1, atom2)
         self.order = order
 
