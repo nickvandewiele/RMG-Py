@@ -83,6 +83,10 @@ class Species(rmgpy.species.Species):
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.coreSizeAtCreation),)
     
+    '''
+    TODO these methods could be inherited from its supertype, but for now I had
+    trouble in doing that.
+    '''
     def __eq__(self, other):
         return self.isIsomorphic(other)
     
