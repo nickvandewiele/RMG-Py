@@ -658,12 +658,11 @@ class Molecule(Graph):
         """
         bonds = []
         self.sortAtoms()
-        for atom1 in self.atoms:
-            for atom2 in self.atoms:
-                    if self.hasBond(atom1, atom2):
-                        if atom1.sortingLabel < atom2.sortingLabel:
-                            bond = self.getBond(atom1, atom2)
-                            bonds.append(bond)
+        for atom1 in self.vertices:
+            for atom2 in atom1.edges:
+                if atom1.sortingLabel < atom2.sortingLabel:
+                    bond = self.getBond(atom1, atom2)
+                    bonds.append(bond)
         return bonds
     
     def hasAtom(self, atom):
