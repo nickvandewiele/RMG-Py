@@ -11,6 +11,7 @@ from rmgpy.reaction import Reaction
 from rmgpy.species import Species
 from rmgpy.molecule import Molecule
 from rmgpy.rmg.model import CoreEdgeReactionModel
+from rmgpy.quantity import Quantity
 from rmgpy.rmg.input import SMILES, InChI, adjacencyList
 from rmgpy import settings
 from rmgpy.rmg.main import initializeLog
@@ -278,9 +279,12 @@ class ErrorCalculator(object):
         self.error_reaction = error_reaction
         self.T = T
         self.rmg = rmg
+        self.f_out = ''#output string
 
     def log_DH298(self, species):
-        logging.info(species.label+' '+ str(species.getEnthalpy(self.T)))
+        H = Quantity(species.getEnthalpy(self.T),"J/mol")
+        H.units = 'kcal/mol'
+        return species.label+' '+ str(H)
         
     def calculate_QM_thermo(self):
         '''
@@ -291,7 +295,8 @@ class ErrorCalculator(object):
             self.rmg.quantumMechanics.initialize()
         for species in self.rmg.initialSpecies:
             species.generateThermoData(database=None, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
-            self.log_DH298(species)
+            logging.info(self.log_DH298(species))
+            self.f_out += self.log_DH298(species)+'\n'
         return
 
 
@@ -307,7 +312,8 @@ class ErrorCalculator(object):
         for spc in self.rmg.initialSpecies:
             if not 'unknown' in spc.props:
                 spc.generateThermoData(database=self.rmg.database)
-                self.log_DH298(spc)
+                logging.info(self.log_DH298(spc))
+                self.f_out += self.log_DH298(spc)+'\n'
         return
     
     def calculate_improved_enthalpy(self, DHr):
@@ -326,20 +332,26 @@ class ErrorCalculator(object):
         for spc in self.error_reaction.products:
             value += spc.getEnthalpy(T)
         
-        return -(DHr-value)
+        return Quantity(-(DHr-value),"J/mol") 
 
-    def run(self):        
+    def run(self): 
+        self.f_out += str(self.error_reaction)+'\n'
         logging.info('QM Enthalpy of Formation: ')
+        self.f_out += 'QM Enthalpy of Formation: '+'\n'
         self.calculate_QM_thermo()
         
         DHr = self.error_reaction.getEnthalpyOfReaction(T)
-        logging.info('Reaction enthalpy: '+str(DHr))
+        DHr_kcal = Quantity(DHr, 'J/mol')
+        DHr_kcal.units = 'kcal/mol'
+        logging.info('Reaction enthalpy: '+str(DHr_kcal))
+        self.f_out += 'Reaction enthalpy: '+str(DHr_kcal)+'\n'
         
         logging.info('Benchmark data for enthalpy of formation: ')
+        self.f_out += 'Benchmark data for enthalpy of formation: '+'\n'
         self.retrieve_benchmark_thermo()
         
         improved_enthalpy = self.calculate_improved_enthalpy(DHr)
-        
+        improved_enthalpy.units = 'kcal/mol'
         unknown_species_label = ''
         for spc in self.error_reaction.reactants:
             if spc.props['unknown']:
@@ -350,6 +362,8 @@ class ErrorCalculator(object):
                      +unknown_species_label+' '
                      +str(improved_enthalpy)
                      )
+        
+        self.f_out += 'Improved enthalpy of formation of '+unknown_species_label+': '+str(improved_enthalpy)+'\n'
     
 if __name__ == '__main__':
     
@@ -373,4 +387,7 @@ if __name__ == '__main__':
     calc = ErrorCalculator(parser.error_reaction, parser.rmg, T)
     calc.run()
     
+    out = 'error_cancelling.out'
+    with open(out,'w') as f:
+        f.write(calc.f_out)
     
