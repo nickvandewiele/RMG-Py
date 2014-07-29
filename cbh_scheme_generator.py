@@ -300,11 +300,29 @@ class Abstract_CBH_Reaction(object):
         self.initialize()
         self.populate_products()
         self.populate_reactants()
+    
+    def derive_unique_species(self, spc_list):
+        
+        unique_spc = {}
+        
+        for spc in spc_list:
+            key = spc.molecule[0].toInChIKey()
+            found = False
+            for unique_species, no_occurr in unique_spc.iteritems():
+                if key == unique_species.molecule[0].toInChIKey():
+                    unique_spc[unique_species] = no_occurr+1
+                    found = True
+                    break
+            if not found:
+                unique_spc[spc] = 1
+                
+        return unique_spc
+        
         
     def map_species_list(self, reactants_products_list, spc_list):
         #populate reactants or products list of the reaction, and update coefficient for each unique species:
-        from collections import Counter
-        unique_spc = Counter(spc_list)
+        unique_spc = self.derive_unique_species(spc_list)
+        
         for unique_species, no_occurr in unique_spc.iteritems():
             reactants_products_list.append(unique_species)#add to products list
             self.error_reaction.coefficients[unique_species.label] = no_occurr #update coefficient

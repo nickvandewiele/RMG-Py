@@ -76,7 +76,7 @@ class Species(rmgpy.species.Species):
     def __init__(self, index=-1, label='', thermo=None, conformer=None, 
                  molecule=None, transportData=None, molecularWeight=None, 
                  dipoleMoment=None, polarizability=None, Zrot=None, 
-                 energyTransferModel=None, reactive=True, coreSizeAtCreation=0):
+                 energyTransferModel=None, reactive=True, props={}, coreSizeAtCreation=0):
         rmgpy.species.Species.__init__(self, index, label, thermo, conformer, molecule, transportData, molecularWeight, dipoleMoment, polarizability, Zrot, energyTransferModel, reactive)
         self.coreSizeAtCreation = coreSizeAtCreation
 
@@ -86,15 +86,6 @@ class Species(rmgpy.species.Species):
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.coreSizeAtCreation),)
     
-    '''
-    TODO these methods could be inherited from its supertype, but for now I had
-    trouble in doing that.
-    '''
-    def __eq__(self, other):
-        return self.isIsomorphic(other)
-    
-    def __hash__(self):
-        return hash((self.molecule[0].toInChIKey()))
     
     def generateThermoData(self, database=None, thermoClass=NASA, quantumMechanics=None):
         """
