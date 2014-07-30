@@ -146,10 +146,13 @@ class AbstractErrorCancellingReactionParser(object):
     
     def parse_species(self, label, structure, reactive=True, unknown=False):
         logging.debug('Found {0} parse_species "{1}" ({2})'.format('reactive' if reactive else 'nonreactive', label, structure.toSMILES()))
-        spec, isNew = self.rmg.reactionModel.makeNewSpecies(structure, label=label, reactive=reactive)
-        spec.props['unknown'] = unknown
-        assert isNew, "Species {0} is a duplicate of {1}. Species in input file must be unique".format(label,spec.label)
-        self.rmg.initialSpecies.append(spec)
+        species, isNew = self.rmg.reactionModel.makeNewSpecies(structure, label=label, reactive=reactive)
+        props = {
+                 'unknown' : unknown
+                 }
+        species.props = props
+        assert isNew, "Species {0} is a duplicate of {1}. Species in input file must be unique".format(label,species.label)
+        self.rmg.initialSpecies.append(species)
 
     def parse_quantumMechanics(self,
                         software,
