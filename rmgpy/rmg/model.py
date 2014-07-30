@@ -77,7 +77,7 @@ class Species(rmgpy.species.Species):
                  molecule=None, transportData=None, molecularWeight=None, 
                  dipoleMoment=None, polarizability=None, Zrot=None, 
                  energyTransferModel=None, reactive=True, props={}, coreSizeAtCreation=0):
-        rmgpy.species.Species.__init__(self, index, label, thermo, conformer, molecule, transportData, molecularWeight, dipoleMoment, polarizability, Zrot, energyTransferModel, reactive)
+        rmgpy.species.Species.__init__(self, index, label, thermo, conformer, molecule, transportData, molecularWeight, dipoleMoment, polarizability, Zrot, energyTransferModel, reactive, props)
         self.coreSizeAtCreation = coreSizeAtCreation
 
     def __reduce__(self):
