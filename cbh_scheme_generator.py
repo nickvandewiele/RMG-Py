@@ -23,19 +23,14 @@ def is_terminal_atom(atom):
 
 def is_terminal_bond(atom1, atom2):
     return is_terminal_atom(atom1) or is_terminal_atom(atom2)
-
-def is_connected_to_terminal_bond(atom):
-        '''
-        If any of its neighboring atoms is a terminal atom,
-        this method returns True.
     
-        '''
-        atoms = exclude_hydrogens(atom.edges)
-        for atom2 in atoms:
-            if is_terminal_atom(atom2):
-                return True
-            
-        return False
+def count_terminal_bonds(atom):
+    n = 0
+    atoms = exclude_hydrogens(atom.edges)
+    for atom2 in atoms:
+        if is_terminal_atom(atom2):
+                n += 1
+    return n    
 
 def make_species_from_adjacencyList(adjList):
     mol = Molecule().fromAdjacencyList(adjList, saturateH=True)#sature with hydrogens
@@ -562,7 +557,7 @@ class CBH3Reaction(Abstract_CBH_Reaction):
         follows the following formula:
         
         n = no. of heavy atom neighbors
-            - 1 (if atom belongs to terminal bond)
+            - no. of connected and terminal bonds
             - 1
         
         
@@ -572,9 +567,8 @@ class CBH3Reaction(Abstract_CBH_Reaction):
         for atom1 in atoms:
             neighbors = exclude_hydrogens([atom2 for atom2 in atom1.edges])
             
-            n = len(neighbors)-1#branching
-            if is_connected_to_terminal_bond(atom1):
-                n -= 1
+            n_terminal = count_terminal_bonds(atom1)
+            n = len(neighbors)-1-n_terminal#branching
                 
             filtered.extend([atom1 for _ in range(n)])
                 
