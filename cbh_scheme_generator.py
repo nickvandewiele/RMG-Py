@@ -123,7 +123,7 @@ class CBHSpeciesGenerator(object):
         
         1 C 1 0 {2,S}{...}
         '''
-        return ' '.join([atom.symbol,str(atom.radicalElectrons),str(atom.lonePairs)])
+        return ' '.join([atom.symbol,'u'+str(atom.radicalElectrons),'p'+str(atom.lonePairs), 'c'+str(atom.charge)])
                         
     def determine_index(self, atom, index_map, running_index):
         '''
