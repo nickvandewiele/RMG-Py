@@ -287,6 +287,39 @@ class Abstract_CBH_Reaction(object):
         self.error_reaction.reactants.append(self.spc)
         self.error_reaction.coefficients[self.spc.label] = 1
     
+    def retrieve_element(self, species_list):
+        '''
+        Returns a map with keys the elements in the species, and values the number of 
+        occurrences of the elements in the list of species. 
+        '''
+        
+        elements = {}
+        
+        for spc in species_list:
+            coeff = self.error_reaction.coefficients[spc.label]
+            
+            symbols = [atom.symbol for atom in spc.molecule[0].atoms]
+            present_elements = set(symbols)
+            
+            for element in present_elements:
+                number = spc.molecule[0].getNumAtoms(element)*coeff
+                if element in elements:
+                    elements[element] = elements[element]+number
+                else:
+                    elements[element] = number
+                
+        return elements
+    
+    def check(self):
+        '''
+        Performs elemental balance checks for the elements in the reactants/products.
+        '''
+        elem_reactants = self.retrieve_element(self.error_reaction.reactants)
+        elem_products = self.retrieve_element(self.error_reaction.products)
+        
+        shared_items = set(elem_reactants.items()) & set(elem_products.items())
+        assert len(shared_items) ==  max(len(elem_reactants), len(elem_reactants))
+
     def run(self):
         '''
         The main method that carries out 
@@ -295,9 +328,17 @@ class Abstract_CBH_Reaction(object):
         self.initialize()
         self.populate_products()
         self.populate_reactants()
+        
+        self.check()
     
     def derive_unique_species(self, spc_list):
+        '''
+        Converts a list with possible duplicate entries into a 
+        map with unique keys and values corresponding to the number of occurrences of
+        the key.
         
+        Uses InChI key string comparison for key comparison.
+        '''
         unique_spc = {}
         
         for spc in spc_list:
