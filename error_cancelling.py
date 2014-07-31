@@ -40,10 +40,10 @@ class AbstractErrorCancellingReactionParser(object):
         '''
         self.inputFile = inputFile
         self.rmg = RMG()
-        self.error_reaction = None 
-        self.speciesDict = {}
         self.global_context = None
         self.local_context = None
+        self.rxns = []
+        self.speciesDictList = []
     
     def read(self):
         '''
@@ -236,6 +236,36 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
         '''        
         self.rung = rung    
     
+    def distribute(self):
+        initial_spc = list(self.rmg.initialSpecies)
+        for spc in initial_spc:
+            cbh = self.get_cbh_rxn()
+            cbh.spc = spc
+            cbh.run()
+            
+            #convert ErrorCancellingReaction into a native rmgpy Reaction by expanding list of species
+            cbh_rxn = cbh.error_reaction
+            
+            speciesDict = {}
+            #put reactants/products in speciesDict:
+            for spc in cbh_rxn.reactants:
+                speciesDict[spc.label] = spc
+            for spc in cbh_rxn.products:
+                speciesDict[spc.label] = spc
+                
+            #first re-initialize the list: 
+            
+            reactants = sorted([speciesDict[spec.label] for spec in cbh_rxn.reactants])
+            products = sorted([speciesDict[spec.label] for spec in cbh_rxn.products])
+            
+            expanded_reactants = expand_species_list(reactants, cbh_rxn.coefficients)
+            expanded_products = expand_species_list(products, cbh_rxn.coefficients)
+            
+            rxn = Reaction(reactants=expanded_reactants, products=expanded_products)
+            
+            self.rxns.append(rxn)
+            self.speciesDictList.append(speciesDict)
+        
     def parse(self):
         """
         Read an error cancelling reaction input file at `path` on disk into the :class:`RMG` object 
@@ -246,33 +276,8 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
         self.local_context['cbh'] = self.parse_cbh
     
         self.read_input_file()
-        cbh = self.get_cbh_rxn()
-        cbh.spc = self.rmg.initialSpecies[0]
-        cbh.run()
         
-        #convert ErrorCancellingReaction into a native rmgpy Reaction by expanding list of species
-        cbh_rxn = cbh.error_reaction
-        
-        #put reactants/products in speciesDict:
-        for spc in cbh_rxn.reactants:
-            self.speciesDict[spc.label] = spc
-        for spc in cbh_rxn.products:
-            self.speciesDict[spc.label] = spc
-            
-        #expand initialSpecies with the other reactants and products of the reaction:
-        #first re-initialize the list:
-        self.rmg.initialSpecies = []
-        self.rmg.initialSpecies.extend(self.speciesDict.values())    
-        
-        reactants = sorted([self.speciesDict[spec.label] for spec in cbh_rxn.reactants])
-        products = sorted([self.speciesDict[spec.label] for spec in cbh_rxn.products])
-        
-        expanded_reactants = expand_species_list(reactants, cbh_rxn.coefficients)
-        expanded_products = expand_species_list(products, cbh_rxn.coefficients)
-        
-        rxn = Reaction(reactants=expanded_reactants, products=expanded_products)
-        
-        self.error_reaction = rxn
+        self.distribute()
 
 ################################################################################
 
@@ -296,10 +301,22 @@ class ErrorCalculator(object):
         '''
         if self.rmg.quantumMechanics:
             self.rmg.quantumMechanics.initialize()
+            
+        #remove the species thermochemistry library from the list of databases:
+
+        #put thermo temporarily here:
+        libraryOrder = self.rmg.database.thermo.libraryOrder
+        #replace it by None:
+        self.rmg.database.thermo.libraryOrder = []
+        
         for species in self.rmg.initialSpecies:
-            species.generateThermoData(database=None, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
+            species.generateThermoData(database=self.rmg.database, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
             logging.info(self.log_DH298(species))
             self.f_out += self.log_DH298(species)+'\n'
+        
+        #put species thermochemistry libraries back:
+        self.rmg.database.thermo.libraryOrder = libraryOrder
+        
         return
 
 
@@ -309,8 +326,6 @@ class ErrorCalculator(object):
         enthalpy of formation of the reactants and products
         of the error-cancelling reaction.
         '''
-        
-        self.rmg.loadDatabase()
         
         for spc in self.rmg.initialSpecies:
             if not 'unknown' in spc.props:
@@ -338,6 +353,10 @@ class ErrorCalculator(object):
         return Quantity(-(DHr-value),"J/mol") 
 
     def run(self): 
+        
+        #load the RMG database:        
+        self.rmg.loadDatabase()
+        
         self.f_out += str(self.error_reaction)+'\n'
         logging.info('QM Enthalpy of Formation: ')
         self.f_out += 'QM Enthalpy of Formation: '+'\n'
@@ -385,12 +404,17 @@ if __name__ == '__main__':
     #parser = UserDefinedReactionParser(inputFile)
     parser = UserDefinedSpeciesReactionParser(inputFile)
     parser.run()
-    
+
     T = 298
-    calc = ErrorCalculator(parser.error_reaction, parser.rmg, T)
-    calc.run()
-    
-    out = 'error_cancelling.out'
-    with open(out,'w') as f:
-        f.write(calc.f_out)
+    out = 'error_cancelling.out'    
+    for rxn, speciesDict in zip(parser.rxns, parser.speciesDictList):
+        rmg = parser.rmg
+        rmg.initialSpecies = []
+        
+        #expand initialSpecies with the other reactants and products of the reaction:
+        rmg.initialSpecies.extend(speciesDict.values()) 
+        calc = ErrorCalculator(rxn, rmg, T)
+        calc.run()
+        with open(out,'a') as f:#append
+            f.write(calc.f_out+'\n')
     
