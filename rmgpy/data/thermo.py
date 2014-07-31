@@ -246,7 +246,22 @@ class ThermoLibrary(Database):
             shortDesc = shortDesc,
             longDesc = longDesc.strip(),
         )
-
+        
+    def contains(self, label_i, molecule_i):
+        '''
+        Checks whether the molecule, with label is present in the existing database
+        of entries.
+        
+        Iterates over entry labels (string comparison), and entry graphs (isomorphism).
+        '''
+        if label_i in self.entries.keys():
+            return True
+        
+        for entry in self.entries.values():
+            if molecule_i.isIsomorphic(entry.item):
+                if molecule_i.multiplicity == entry.item.multiplicity:
+                    return True
+        
     def saveEntry(self, f, entry):
         """
         Write the given `entry` in the thermo database to the file object `f`.
