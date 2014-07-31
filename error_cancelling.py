@@ -186,19 +186,22 @@ class UserDefinedReactionParser(AbstractErrorCancellingReactionParser):
         a rmg-type reaction by converting the coefficients dict
         into an expanded list of reactants/products.
         '''
-        
+        speciesDict = {}
         for spc in self.rmg.initialSpecies:
-            self.speciesDict[spc.label] = spc
+            speciesDict[spc.label] = spc
             
         #make sure we use references to the same species objects:
-        reactants = sorted([self.speciesDict[spec] for spec in reactants])
-        products = sorted([self.speciesDict[spec] for spec in products])
+        reactants = sorted([speciesDict[spec] for spec in reactants])
+        products = sorted([speciesDict[spec] for spec in products])
         
         expanded_reactants = expand_species_list(reactants, coefficients)
         expanded_products = expand_species_list(products, coefficients)
         
         rxn = Reaction(reactants=expanded_reactants, products=expanded_products)
-        self.error_reaction = rxn
+        
+        self.rxns.append(rxn)
+        self.speciesDictList.append(speciesDict)
+        
         return rxn
 
 
@@ -237,7 +240,15 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
         self.rung = rung    
     
     def distribute(self):
-        initial_spc = list(self.rmg.initialSpecies)
+        '''
+        Each species in the initial list of rmg.initialSpecies will
+        lead to an error-cancelling reaction. 
+        
+        This method creates the reaction, and corresponding species dictionary per species.
+        
+        '''
+        initial_spc = list(self.rmg.initialSpecies)#create a new copy!
+        
         for spc in initial_spc:
             cbh = self.get_cbh_rxn()
             cbh.spc = spc
@@ -253,8 +264,6 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
             for spc in cbh_rxn.products:
                 speciesDict[spc.label] = spc
                 
-            #first re-initialize the list: 
-            
             reactants = sorted([speciesDict[spec.label] for spec in cbh_rxn.reactants])
             products = sorted([speciesDict[spec.label] for spec in cbh_rxn.products])
             
@@ -401,8 +410,8 @@ if __name__ == '__main__':
     level = logging.INFO
     initializeLog(level, 'RMG.log')
     
-    #parser = UserDefinedReactionParser(inputFile)
-    parser = UserDefinedSpeciesReactionParser(inputFile)
+    parser = UserDefinedReactionParser(inputFile)
+    #parser = UserDefinedSpeciesReactionParser(inputFile)
     parser.run()
 
     T = 298
