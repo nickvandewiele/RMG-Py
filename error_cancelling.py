@@ -15,7 +15,14 @@ from rmgpy.quantity import Quantity
 from rmgpy.rmg.input import SMILES, InChI, adjacencyList
 from rmgpy import settings
 from rmgpy.rmg.main import initializeLog
-        
+
+supported_reactions = {
+            'cbh0': CBH0Reaction(),
+            'cbh1': CBH1Reaction(),
+            'cbh2': CBH2Reaction(),
+            'cbh3': CBH3Reaction(),
+            }
+
 def expand_species_list(species_list, coefficients):
     '''
     Creates a new, expanded list of parse_species, 
@@ -224,12 +231,7 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
         self.rung = ''
     
     def get_cbh_rxn(self):
-        return {
-            'cbh0': CBH0Reaction(),
-            'cbh1': CBH1Reaction(),
-            'cbh2': CBH2Reaction(),
-            'cbh3': CBH3Reaction(),
-        }[self.rung]
+        return supported_reactions[self.rung]
       
     def parse_cbh(self, rung):
         '''
@@ -412,8 +414,8 @@ if __name__ == '__main__':
     level = logging.INFO
     initializeLog(level, 'RMG.log')
     
-    parser = UserDefinedReactionParser(inputFile)
-    #parser = UserDefinedSpeciesReactionParser(inputFile)
+    #parser = UserDefinedReactionParser(inputFile)
+    parser = UserDefinedSpeciesReactionParser(inputFile)
     parser.run()
 
     T = 298
