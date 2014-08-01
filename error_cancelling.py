@@ -5,6 +5,7 @@ Created on Jul 10, 2014
 '''
 import os
 from rmgpy.rmg.main import RMG
+from rmgpy.data.rmg import RMGDatabase
 from cbh_scheme_generator import *
 import logging
 from rmgpy.reaction import Reaction
@@ -118,38 +119,14 @@ class AbstractErrorCancellingReactionParser(object):
     '''
     def parse_database(self,
                  thermoLibraries = None,
-                 reactionLibraries = None,
-                 frequenciesLibraries = None,
-                 seedMechanisms = None,
-                 kineticsFamilies = 'default',
-                 kineticsDepositories = 'default',
-                 kineticsEstimator = 'group additivity',
                  ):
         # This function just stores the information about the database to be loaded
         # We don't actually load the database until after we're finished reading
         # the input file
         if isinstance(thermoLibraries, str): thermoLibraries = [thermoLibraries]
-        if isinstance(reactionLibraries, str): reactionLibraries = [reactionLibraries]
-        if isinstance(seedMechanisms, str): seedMechanisms = [seedMechanisms]
-        if isinstance(frequenciesLibraries, str): frequenciesLibraries = [frequenciesLibraries]
+
         self.rmg.databaseDirectory = settings['database.directory']
         self.rmg.thermoLibraries = thermoLibraries or []
-        self.rmg.reactionLibraries = reactionLibraries or []
-        self.rmg.seedMechanisms = seedMechanisms or []
-        self.rmg.statmechLibraries = frequenciesLibraries or []
-        self.rmg.kineticsEstimator = kineticsEstimator
-        if kineticsDepositories == 'default':
-            self.rmg.kineticsDepositories = ['training']
-        elif kineticsDepositories == 'all':
-            self.rmg.kineticsDepositories = None
-        else:
-            assert isinstance(kineticsDepositories,list), "kineticsDepositories should be either 'default', 'all', or a list of names eg. ['training','PrIMe']."
-            self.rmg.kineticsDepositories = kineticsDepositories
-        if kineticsFamilies in ('default', 'all', 'none'):
-            self.rmg.kineticsFamilies = kineticsFamilies
-        else:
-            assert isinstance(kineticsFamilies,list), "kineticsFamilies should be either 'default', 'all', 'none', or a list of names eg. ['H_Abstraction','R_Recombination'] or ['!Intra_Disproportionation']."
-            self.rmg.kineticsFamilies = kineticsFamilies
     
     def parse_species(self, label, structure, reactive=True, unknown=False):
         logging.debug('Found {0} parse_species "{1}" ({2})'.format('reactive' if reactive else 'nonreactive', label, structure.toSMILES()))
@@ -367,8 +344,13 @@ class ErrorCalculator(object):
 
     def run(self): 
         
-        #load the RMG database:        
-        self.rmg.loadDatabase()
+        #load the RMG thermo database: 
+        self.rmg.database = RMGDatabase()       
+        self.rmg.database.loadThermo(
+                                     os.path.join(self.rmg.databaseDirectory, 'thermo'), 
+                                     thermoLibraries=self.rmg.thermoLibraries, 
+                                     depository=True
+                                     )
         
         self.f_out += str(self.error_reaction)+'\n'
         logging.info('QM Enthalpy of Formation: ')
