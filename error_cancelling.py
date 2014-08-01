@@ -319,7 +319,8 @@ class ErrorCalculator(object):
         self.rmg.database.thermo.libraryOrder = []
         
         for species in self.rmg.initialSpecies:
-            species.generateThermoData(database=self.rmg.database, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
+            thermo = species.generateThermoData(database=self.rmg.database, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
+            assert thermo is not None
             logging.info(self.log_DH298(species))
             self.f_out += self.log_DH298(species)+'\n'
         
@@ -338,7 +339,8 @@ class ErrorCalculator(object):
         
         for spc in self.rmg.initialSpecies:
             if not 'unknown' in spc.props:
-                spc.generateThermoData(database=self.rmg.database)
+                thermo = spc.generateThermoData(database=self.rmg.database)
+                assert thermo is not None
                 logging.info(self.log_DH298(spc))
                 self.f_out += self.log_DH298(spc)+'\n'
         return
