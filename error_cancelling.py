@@ -91,7 +91,6 @@ class AbstractErrorCancellingReactionParser(object):
     def initialize_rmg(self):
         self.rmg.reactionModel = CoreEdgeReactionModel()
         self.rmg.initialSpecies = []
-        self.rmg.reactionSystems = []
         
     def initialize_context(self):
         self.global_context = { '__builtins__': None }
@@ -268,25 +267,82 @@ class UserDefinedSpeciesReactionParser(AbstractErrorCancellingReactionParser):
         self.distribute()
 
 ################################################################################
+class UncertaintyCalculator(object):
+    def __init__(self, benchmark_data, qm_data, improved_enthalpy):
+        self.benchmark_data = benchmark_data
+        self.qm_data = qm_data
+        self.improved = improved_enthalpy
+    
+    def find_unknown_species(self):
+        for spc in self.qm_data.keys():
+            if 'unknown' in spc.props:
+                return spc
+            
+            
+    def calculate_total_uncertainty(self):
+        '''
+        The total uncertainty consists of two contributions:
+        1) the uncertainty of the reaction enthalpy.
+        2) the sum of the contributions of the (independent) benchmark data uncertainties.
+        
+        The uncertainty of the reaction enthalpy is taken equal to the uncertain of the
+        QM result of the given species.
+        
+        '''
+        
+        unknown = self.find_unknown_species()
+        
+        u_unknown = self.qm_data[unknown].uncertainty
+        
+        sum_benchmark = 0
+        for spc, quant in self.benchmark_data.iteritems():
+            sum_benchmark += quant.uncertainty
+            
+        total = u_unknown + sum_benchmark
+        
+        return total            
+         
+    def run(self):
+        '''
+        Checks whether the 'improved' enthalpy of formation is really improving the original 
+        QM estimate. 
+        
+        This verification is done by checking whether the improved estimate still falls within 
+        uncertainty boundaries of the original estimate.
+        
+        The uncertainty boundaries are calculated based on the uncertainty margins of the original QM
+        value, and the uncertainties of the benchmark data.
+        '''
 
-
+        unknown = self.find_unknown_species()
+        total_uncertainty = self.calculate_total_uncertainty()
+        
+        absolute_deviation = abs(self.qm_data[unknown].value - self.improved.value)
+        if absolute_deviation >  total_uncertainty:
+            print 'Improved value is not within uncertainty margin. Please interpret carefully!'
+        else:
+            print 'Improved value is within uncertainty margin. This is probably a real improvement of the original value.'
+            
 class ErrorCalculator(object):
     def __init__(self, error_reaction, rmg, T):
         self.error_reaction = error_reaction
         self.T = T
         self.rmg = rmg
         self.f_out = ''#output string
-
-    def log_DH298(self, species):
-        H = Quantity(species.getEnthalpy(self.T),"J/mol")
+        self.qm_data = {}
+        self.benchmark_data = {}
+        
+    def log_DH298(self, species, uncertaintyType, uncertainty):
+        H = Quantity(species.getEnthalpy(self.T),"J/mol",uncertaintyType, uncertainty)
         H.units = 'kcal/mol'
-        return species.label+' '+ str(H)
+        return H, species.label+' '+ str(H)
         
     def calculate_QM_thermo(self):
         '''
         calculates the thermochemistry of the species
         using QM methods
         '''
+        pm3_uncertainty = 3*4.18*1000#kcal/mol to J/mol
         if self.rmg.quantumMechanics:
             self.rmg.quantumMechanics.initialize()
             
@@ -296,18 +352,19 @@ class ErrorCalculator(object):
         libraryOrder = self.rmg.database.thermo.libraryOrder
         #replace it by None:
         self.rmg.database.thermo.libraryOrder = []
-        
+        uncertaintyType = '+|-'
         for species in self.rmg.initialSpecies:
             thermo = species.generateThermoData(database=self.rmg.database, quantumMechanics=self.rmg.reactionModel.quantumMechanics)
             assert thermo is not None
-            logging.info(self.log_DH298(species))
-            self.f_out += self.log_DH298(species)+'\n'
+            value, string_value = self.log_DH298(species,uncertainty=pm3_uncertainty, uncertaintyType=uncertaintyType)
+            self.qm_data[species] = value
+            logging.info(string_value)
+            self.f_out += string_value+'\n'
         
         #put species thermochemistry libraries back:
         self.rmg.database.thermo.libraryOrder = libraryOrder
         
         return
-
 
     def retrieve_benchmark_thermo(self):
         '''
@@ -315,13 +372,16 @@ class ErrorCalculator(object):
         enthalpy of formation of the reactants and products
         of the error-cancelling reaction.
         '''
-        
+        benchmark_uncertainty = 0.1*4.18*1000 #kcal/mol to J/mol
+        uncertaintyType = '+|-'
         for spc in self.rmg.initialSpecies:
             if not 'unknown' in spc.props:
                 thermo = spc.generateThermoData(database=self.rmg.database)
                 assert thermo is not None
-                logging.info(self.log_DH298(spc))
-                self.f_out += self.log_DH298(spc)+'\n'
+                value, string_value = self.log_DH298(spc, uncertainty=benchmark_uncertainty, uncertaintyType=uncertaintyType)
+                self.benchmark_data[spc] = value
+                logging.info(string_value)
+                self.f_out += string_value+'\n'
         return
     
     def calculate_improved_enthalpy(self, DHr):
@@ -381,7 +441,10 @@ class ErrorCalculator(object):
                      )
         
         self.f_out += 'Improved enthalpy of formation of '+unknown_species_label+': '+str(improved_enthalpy)+'\n'
-    
+
+        calc = UncertaintyCalculator(self.benchmark_data, self.qm_data, improved_enthalpy)
+        calc.run()
+        
 if __name__ == '__main__':
     
     import argparse
