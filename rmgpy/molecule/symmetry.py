@@ -27,29 +27,108 @@
 #
 ################################################################################
 import rmgpy.molecule
+from scoop import futures
+import operator
 """
 This module provides functionality for estimating the symmetry number of a
 molecule from its chemical graph representation.
 """
 
+def count_bonds(molecule, atom):
+    #TODO remove neighbor count
+    bond_type_count = {'single' : 0, 
+                       'double' : 0, 
+                       'triple' : 0, 
+                       'benzene': 0
+                       }
+    #create task for edge iteration?
+    for bond in atom.edges.values():
+        if bond.isSingle(): bond_type_count['single'] += 1
+        elif bond.isDouble(): bond_type_count['double'] += 1
+        elif bond.isTriple(): bond_type_count['triple'] += 1
+        elif bond.isBenzene(): bond_type_count['benzene'] += 1
+    return bond_type_count
+
+def reduce_list(count):
+    for i in range(count.count(2) / 2):
+        count.remove(2)
+    for i in range(count.count(3) / 3):
+        count.remove(3); count.remove(3)
+    for i in range(count.count(4) / 4):
+        count.remove(4); count.remove(4); count.remove(4)
+    print 'reduced count: ', count
+    return count
+
+def checkIsomorphism(group1, group2):
+    #TODO account for symmetry
+    if group1 is not group2:
+        return group1.isIsomorphic(group2)
+    else:
+        return True
+    
+def checkIsomorphism_for_group(group1, groups):
+    tasks = [futures.submit(checkIsomorphism, group1, group2) for group2 in groups]
+    iso = [task.result() for task in tasks]
+    print 'iso: ', iso
+    #SCOOP will automatically generate a binary reduction tree and submit it. Every level of the tree contain reduction nodes except for the bottom-most which contains the mapped function.
+    return futures.mapReduce(int, operator.add, iso)
+
+def table_look_up(atom, count, bond_type_count):
+    #TODO extract table, and parallelize table lookup
+    symmetryNumber = 1
+    if atom.radicalElectrons == 0:
+        if bond_type_count['single'] == 4:
+            # Four single bonds
+            if count == [4]: symmetryNumber *= 12
+            elif count == [3, 1]: symmetryNumber *= 3
+            elif count == [2, 2]: symmetryNumber *= 2
+            elif count == [2, 1, 1]: symmetryNumber *= 1
+            elif count == [1, 1, 1, 1]: symmetryNumber *= 1
+        elif bond_type_count['single'] == 3:
+            # Three single bonds
+            if count == [3]: symmetryNumber *= 3
+            elif count == [2, 1]: symmetryNumber *= 1
+            elif count == [1, 1, 1]: symmetryNumber *= 1
+
+        elif bond_type_count['single'] == 2:
+            # Two single bonds
+            if count == [2]: symmetryNumber *= 2
+        elif bond_type_count['double'] == 2:
+            # Two double bonds
+            if count == [2]: symmetryNumber *= 2
+    elif atom.radicalElectrons == 1:
+        if bond_type_count['single'] == 3:
+            # Three single bonds
+            if count == [3]: symmetryNumber *= 6
+            elif count == [2, 1]: symmetryNumber *= 2
+            elif count == [1, 1, 1]: symmetryNumber *= 1
+    elif atom.radicalElectrons == 2:
+        if bond_type_count['single'] == 2:
+            # Two single bonds
+            if count == [2]:
+                symmetryNumber *= 2
+    #TODO nitrogen
+    '''
+    if atom.isNitrogen():
+        for groupN in groups:
+            if groupN.toSMILES() == "[N+](=O)[O-]":
+                symmetryNumber *= 2
+    '''
+    return symmetryNumber
+        
 def calculateAtomSymmetryNumber(molecule, atom):
     """
     Return the symmetry number centered at `atom` in the structure. The
     `atom` of interest must not be in a cycle.
     """
-    symmetryNumber = 1
+    if molecule.isAtomInCycle(atom):
+        return 1
 
-    single = 0; double = 0; triple = 0; benzene = 0
-    numNeighbors = 0
-    for bond in atom.edges.values():
-        if bond.isSingle(): single += 1
-        elif bond.isDouble(): double += 1
-        elif bond.isTriple(): triple += 1
-        elif bond.isBenzene(): benzene += 1
-        numNeighbors += 1
+    bond_type_count_task = futures.submit(count_bonds, molecule, atom) 
     
     # If atom has zero or one neighbors, the symmetry number is 1
-    if numNeighbors < 2: return symmetryNumber
+    #symmetryNumber = 1
+    #if numNeighbors < 2: return symmetryNumber
 
     # Create temporary structures for each functional group attached to atom
     molecule0 = molecule
@@ -58,62 +137,16 @@ def calculateAtomSymmetryNumber(molecule, atom):
     molecule.removeAtom(atom)
     groups = molecule.split()
 
-    # Determine equivalence of functional groups around atom
-    groupIsomorphism = dict([(group, dict()) for group in groups])
-    for group1 in groups:
-        for group2 in groups:
-            if group1 is not group2 and group2 not in groupIsomorphism[group1]:
-                groupIsomorphism[group1][group2] = group1.isIsomorphic(group2)
-                groupIsomorphism[group2][group1] = groupIsomorphism[group1][group2]
-            elif group1 is group2:
-                groupIsomorphism[group1][group1] = True
-    count = [sum([int(groupIsomorphism[group1][group2]) for group2 in groups]) for group1 in groups]
-    for i in range(count.count(2) / 2):
-        count.remove(2)
-    for i in range(count.count(3) / 3):
-        count.remove(3); count.remove(3)
-    for i in range(count.count(4) / 4):
-        count.remove(4); count.remove(4); count.remove(4)
+    tasks = [futures.submit(checkIsomorphism_for_group, group1, groups) for group1 in groups]
+    count = [task.result() for task in tasks]
+    print 'count: ', count
+    count = reduce_list(count)
+        
     count.sort(); count.reverse()
     
-    if atom.radicalElectrons == 0:
-        if single == 4:
-            # Four single bonds
-            if count == [4]: symmetryNumber *= 12
-            elif count == [3, 1]: symmetryNumber *= 3
-            elif count == [2, 2]: symmetryNumber *= 2
-            elif count == [2, 1, 1]: symmetryNumber *= 1
-            elif count == [1, 1, 1, 1]: symmetryNumber *= 1
-        elif single == 3:
-            # Three single bonds
-            if count == [3]: symmetryNumber *= 3
-            elif count == [2, 1]: symmetryNumber *= 1
-            elif count == [1, 1, 1]: symmetryNumber *= 1
-
-        elif single == 2:
-            # Two single bonds
-            if count == [2]: symmetryNumber *= 2
-        elif double == 2:
-            # Two double bonds
-            if count == [2]: symmetryNumber *= 2
-    elif atom.radicalElectrons == 1:
-        if single == 3:
-            # Three single bonds
-            if count == [3]: symmetryNumber *= 6
-            elif count == [2, 1]: symmetryNumber *= 2
-            elif count == [1, 1, 1]: symmetryNumber *= 1
-    elif atom.radicalElectrons == 2:
-        if single == 2:
-            # Two single bonds
-            if count == [2]:
-                symmetryNumber *= 2
-    
-    if atom.isNitrogen():
-        for groupN in groups:
-            if groupN.toSMILES() == "[N+](=O)[O-]":
-                symmetryNumber *= 2
-    
-    return symmetryNumber
+    bond_type_count = bond_type_count_task.result()
+    print 'bond_type_count: ', bond_type_count
+    return table_look_up(atom, count, bond_type_count)
 
 ################################################################################
 
@@ -446,16 +479,19 @@ def calculateCyclicSymmetryNumber(molecule):
 
 ################################################################################
 
+def identity(number):
+    return number
+
 def calculateSymmetryNumber(molecule):
     """
     Return the symmetry number for the structure. The symmetry number
     includes both external and internal modes.
     """
     symmetryNumber = 1
-
-    for atom in molecule.vertices:
-        if not molecule.isAtomInCycle(atom):
-            symmetryNumber *= calculateAtomSymmetryNumber(molecule, atom)
+    tasks = [futures.submit(calculateAtomSymmetryNumber, molecule, atom) for atom in molecule.vertices]
+    
+    #TODO how can we just use a reduce operation, without the mapping?
+    symmetryNumber *= futures.mapReduce(identity, operator.mul, [task.result() for task in tasks])
 
     for atom1 in molecule.vertices:
         for atom2 in atom1.edges:
