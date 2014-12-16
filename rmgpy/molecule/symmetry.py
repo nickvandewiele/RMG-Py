@@ -491,6 +491,7 @@ def calculateSymmetryNumber(molecule):
     tasks = [futures.submit(calculateAtomSymmetryNumber, molecule, atom) for atom in molecule.vertices]
     
     #TODO how can we just use a reduce operation, without the mapping?
+
     print 'We got this far!'
     atom_symms = [task.result() for task in tasks]
     print 'atom_symms', atom_symms
