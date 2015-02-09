@@ -56,7 +56,6 @@ def reduce_list(count):
         count.remove(3); count.remove(3)
     for i in range(count.count(4) / 4):
         count.remove(4); count.remove(4); count.remove(4)
-    print 'reduced count: ', count
     return count
 
 def checkIsomorphism(group1, group2):
@@ -69,7 +68,6 @@ def checkIsomorphism(group1, group2):
 def checkIsomorphism_for_group(group1, groups):
     tasks = [futures.submit(checkIsomorphism, group1, group2) for group2 in groups]
     iso = [task.result() for task in tasks]
-    print 'iso: ', iso
     #SCOOP will automatically generate a binary reduction tree and submit it. Every level of the tree contain reduction nodes except for the bottom-most which contains the mapped function.
     return futures.mapReduce(int, operator.add, iso)
 
@@ -123,9 +121,7 @@ def calculateAtomSymmetryNumber(molecule, atom):
     # If atom has zero or one neighbors, the symmetry number is 1
     symmetryNumber = 1
     bonds = atom.edges.values()
-    print 'bonds', bonds
     numNeighbors = len(bonds)
-    print 'numNeighbors', numNeighbors
     if numNeighbors < 2: return symmetryNumber
     
     bond_type_count_task = futures.submit(count_bonds, molecule, atom) 
@@ -139,13 +135,11 @@ def calculateAtomSymmetryNumber(molecule, atom):
 
     tasks = [futures.submit(checkIsomorphism_for_group, group1, groups) for group1 in groups]
     count = [task.result() for task in tasks]
-    print 'count: ', count
     count = reduce_list(count)
         
     count.sort(); count.reverse()
     
     bond_type_count = bond_type_count_task.result()
-    print 'bond_type_count: ', bond_type_count
     return table_look_up(atom, count, bond_type_count)
 
 ################################################################################
