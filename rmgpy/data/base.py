@@ -170,6 +170,7 @@ class Database:
         return hash(self.name)
 
     def __eq__(self, other):
+        if not type(self) is type(other): return False
         return self.name == other.name
     
     def load(self, path, local_context=None, global_context=None):
