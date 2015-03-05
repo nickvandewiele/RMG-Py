@@ -165,7 +165,13 @@ class Database:
         self.solvent = solvent
         self.shortDesc = shortDesc
         self.longDesc = longDesc
+        
+    def __hash__(self):
+        return hash(self.name)
 
+    def __eq__(self, other):
+        return self.name == other.name
+    
     def load(self, path, local_context=None, global_context=None):
         """
         Load an RMG-style database from the file at location `path` on disk.
