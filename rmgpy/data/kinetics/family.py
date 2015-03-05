@@ -356,7 +356,13 @@ class KineticsFamily(Database):
         self.groups = None
         self.rules = None
         self.depositories = []
+        
+    def __hash__(self):
+        return hash(self.name)
 
+    def __eq__(self, other):
+        return self.name == other.name
+    
     def __repr__(self):
         return '<ReactionFamily "{0}">'.format(self.label)
 
