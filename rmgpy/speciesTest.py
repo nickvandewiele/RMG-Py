@@ -132,6 +132,21 @@ class TestSpecies(unittest.TestCase):
         self.assertEquals(self.species.props['foo'], 'bar')
         self.assertDictEqual(spc2.props, {})
         self.assertDictEqual(spc3.props, {'foo': 'bla'})
+        
+    def testSpeciesDictionaryKey(self):
+        """
+        Test that dictionaries with keys that are Species objects do not create duplicate
+        keys.
+        """
+        spc1 = self.species
+        
+        from copy import deepcopy
+        spc2 = deepcopy(spc1)
+        
+        d = {}
+        d[spc1] = 'foo'
+        d[spc2] = 'foo'
+        self.assertEquals(len(d.keys()), 1)
 ################################################################################
 
 if __name__ == '__main__':
