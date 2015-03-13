@@ -139,16 +139,13 @@ class Species(object):
     
     def compare_molecules(self, other):
         """
-        Generates the product of the resonance isomers of both species and checks identity of each isomer.
-        If a pair of resonance isomers is found that is not identical, False is returned.
-        
-        If all pairs of resonance isomers are identical, True is returned.
+        Generates the product of the resonance isomers of both species and checks equality of the resonance
+        isomers of both species. Converts the list of resonance isomers into a set and uses set equality.
         """
-        import itertools
-        for (one_isomer, another_isomer) in itertools.product(self.molecule, other.molecule):
-            if one_isomer != another_isomer: return False
-            
-        return True
+        [spc.generateResonanceIsomers() for spc in (self, other)]
+        
+        from sets import Set
+        return Set(self.molecule) == Set(other.molecule)
         
     def __repr__(self):
         """
