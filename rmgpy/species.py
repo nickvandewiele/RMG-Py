@@ -118,7 +118,38 @@ class Species(object):
 
         
 
-
+    def __hash__(self):
+        return hash(tuple([mol.getFingerprint() for mol in self.molecule]))
+    
+    def __richcmp__(x, y, op):
+        if op == 2:#Py_EQ
+            return x.__is_equal(y)
+        if op == 3:#Py_NE
+            return not x.__is_equal(y)
+        else:
+            assert False
+    
+    def __is_equal(self,other):
+        """Private method to test equality of two Species objects."""
+        if not isinstance(other, Species): return False #different type
+        elif self is other: return True #same reference in memory
+        else:
+            return self.compare_molecules(other)
+            
+    
+    def compare_molecules(self, other):
+        """
+        Generates the product of the resonance isomers of both species and checks identity of each isomer.
+        If a pair of resonance isomers is found that is not identical, False is returned.
+        
+        If all pairs of resonance isomers are identical, True is returned.
+        """
+        import itertools
+        for (one_isomer, another_isomer) in itertools.product(self.molecule, other.molecule):
+            if one_isomer != another_isomer: return False
+            
+        return True
+        
     def __repr__(self):
         """
         Return a string representation that can be used to reconstruct the
