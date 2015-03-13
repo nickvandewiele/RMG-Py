@@ -395,7 +395,7 @@ class PDepNetwork(rmgpy.pdep.network.Network):
             if self.source[0] not in isomers: isomers.insert(0, self.source[0])
         else:
             # The source is a bimolecular reactant channel
-            self.source.sort()
+            self.source.sort(key=lambda spc: spc.label)
             reactants.append(self.source)
         
         # Iterate over path reactions and make sure each set of reactants and products is classified
