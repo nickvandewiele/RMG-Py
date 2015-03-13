@@ -1039,6 +1039,30 @@ class TestMolecule(unittest.TestCase):
         """
         self.assertEqual(Molecule().fromSMILES('C#C').countInternalRotors(), 0)
     
+    def testMoleculeIdentity(self):
+        """
+        Test comparator methods of Molecule objects.
+        """
+        from copy import deepcopy
+        self.assertTrue(self.molecule == deepcopy(self.molecule))
+        self.assertFalse(self.molecule == Molecule().fromSMILES('CCC'))
+        self.assertFalse(self.molecule == 'foo')
+        
+    def testMoleculeDictionaryKey(self):
+        """
+        Test that dictionaries with keys that are Molecule objects do not create duplicate
+        keys.
+        """
+        from copy import deepcopy        
+        d = {}
+        m = Molecule().fromSMILES('CCC')
+        d[Molecule().fromSMILES('CCC')] = '1'
+        d[deepcopy(Molecule().fromSMILES('CCC'))] = '2'
+        d[Molecule().fromSMILES('CCC')] = '3'
+        d[m] = '4'
+        self.assertEquals(len(d.keys()), 1)
+        
+        
     @work_in_progress
     def testCountInternalRotorsDimethylAcetylene(self):
         """

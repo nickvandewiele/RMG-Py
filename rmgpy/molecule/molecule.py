@@ -120,7 +120,7 @@ class Atom(Vertex):
         self.atomType = None
         self.lonePairs = lonePairs
         self.coords = coords
-
+    
     def __str__(self):
         """
         Return a human-readable string representation of the object.
@@ -613,6 +613,22 @@ class Molecule(Graph):
         if multiplicity != -187:  # it was set explicitly, so re-set it (fromSMILES etc may have changed it)
             self.multiplicity = multiplicity
     
+    
+    def __hash__(self):
+        return hash((self.getFingerprint()))
+            
+    def __richcmp__(x, y, op):
+        if op == 2:#Py_EQ
+            return x.compare(y)
+        else:
+            assert False
+    
+    def compare(self,other):
+        if not isinstance(other, Molecule): return False #different type
+        elif self is other: return True #same reference in memory
+        else:
+            return self.isIsomorphic(other)
+            
     def __str__(self):
         """
         Return a human-readable string representation of the object.
