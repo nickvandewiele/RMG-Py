@@ -137,15 +137,12 @@ class TestSpecies(unittest.TestCase):
         """
         Test that dictionaries with keys that are Species objects do not create duplicate
         keys.
-        """
-        spc1 = self.species
-        
+        """        
         from copy import deepcopy
-        spc2 = deepcopy(spc1)
         
         d = {}
-        d[spc1] = 'foo'
-        d[spc2] = 'foo'
+        d[self.species] = 'foo'
+        d[deepcopy(self.species)] = 'foo'
         self.assertEquals(len(d.keys()), 1)
 ################################################################################
 
