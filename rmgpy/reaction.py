@@ -889,9 +889,9 @@ class Reaction:
             
             # Sort the reactants and products by carbon number, then by oxygen number
             reactants = [(carbon, oxygen, reactant) for carbon, oxygen, reactant in zip(reactantCarbons,reactantOxygens,reactants)]
-            reactants.sort(key=lambda spc: spc.label)
+            reactants.sort(key=lambda t: t[0])
             products = [(carbon, oxygen, product) for carbon, oxygen, product in zip(productCarbons,productOxygens,products)]
-            products.sort(key=lambda spc: spc.label)
+            products.sort(key=lambda t: t[0])
             
             while len(reactants) > 1 and len(products) > 1:
                 self.pairs.append((reactants[-1][2], products[-1][2]))
