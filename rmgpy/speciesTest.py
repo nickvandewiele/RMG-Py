@@ -152,6 +152,17 @@ class TestSpecies(unittest.TestCase):
         from copy import deepcopy
         l = [self.species, deepcopy(self.species) ]
         self.assertIsNone(l.sort(key=lambda spc: spc.label))
+     
+    def testCompareSpecies(self):
+        """
+        Test that the resonance isomers of two species are correctly compared.
+        """        
+        from copy import deepcopy
+        self.assertTrue(self.species.compare_molecules(deepcopy(self.species)))
+        self.assertTrue(Species(molecule=[Molecule().fromSMILES('[CH2]C=C')]).compare_molecules(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
+        self.assertFalse(Species(molecule=[Molecule().fromSMILES('[CH2]C=CC')]).compare_molecules(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
+        
+        
 ################################################################################
 
 if __name__ == '__main__':
