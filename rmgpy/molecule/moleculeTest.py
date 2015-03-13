@@ -1061,7 +1061,13 @@ class TestMolecule(unittest.TestCase):
         d[Molecule().fromSMILES('CCC')] = '3'
         d[m] = '4'
         self.assertEquals(len(d.keys()), 1)
-        
+    
+    def testMoleculeSort(self):
+        """
+        Test that a list of molecules can be sorted.
+        """        
+        l = [Molecule().fromSMILES('CCC'), Molecule().fromSMILES('CC')]
+        self.assertIsNone(l.sort(key=lambda mol: mol.getFingerprint()))
         
     @work_in_progress
     def testCountInternalRotorsDimethylAcetylene(self):
