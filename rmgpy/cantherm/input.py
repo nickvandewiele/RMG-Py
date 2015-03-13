@@ -227,8 +227,8 @@ def network(label, isomers=None, reactants=None, products=None, pathReactions=No
             # Sort bimolecular configurations so that we always encounter them in the
             # same order
             # The actual order doesn't matter, as long as it is consistent
-            rxn.reactants.sort()
-            rxn.products.sort()
+            rxn.reactants.sort(key=lambda spc: spc.label)
+            rxn.products.sort(key=lambda spc: spc.label)
             # All reactant configurations not already defined as reactants or 
             # isomers are assumed to be product channels
             if len(rxn.reactants) == 1 and rxn.reactants[0] not in isomers and rxn.reactants not in products:

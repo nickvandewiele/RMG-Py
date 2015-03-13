@@ -144,6 +144,14 @@ class TestSpecies(unittest.TestCase):
         d[self.species] = 'foo'
         d[deepcopy(self.species)] = 'foo'
         self.assertEquals(len(d.keys()), 1)
+        
+    def testSpeciesSort(self):
+        """
+        Test that a list of species can be sorted.
+        """        
+        from copy import deepcopy
+        l = [self.species, deepcopy(self.species) ]
+        self.assertIsNone(l.sort(key=lambda spc: spc.label))
 ################################################################################
 
 if __name__ == '__main__':
