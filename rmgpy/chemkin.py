@@ -48,7 +48,7 @@ from quantity import Quantity
 from data.base import Entry 
 from rmgpy.data.kinetics.library import LibraryReaction, KineticsLibrary
 from rmgpy.data.kinetics.family import TemplateReaction, KineticsFamily
-from rmgpy.rmg.pdep import PDepNetwork
+from rmgpy.rmg.pdep import PDepNetwork, PDepReaction
 from rmgpy.molecule import Molecule
 from rmgpy.transport import TransportData
 
