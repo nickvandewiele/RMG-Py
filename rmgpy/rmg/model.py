@@ -77,13 +77,20 @@ class Species(rmgpy.species.Species):
                  energyTransferModel=None, reactive=True, props=None, coreSizeAtCreation=0):
         rmgpy.species.Species.__init__(self, index, label, thermo, conformer, molecule, transportData, molecularWeight, dipoleMoment, polarizability, Zrot, energyTransferModel, reactive, props)
         self.coreSizeAtCreation = coreSizeAtCreation
+        self.__initialize()
 
     def __reduce__(self):
         """
         A helper function used when pickling an object.
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.props, self.coreSizeAtCreation),)
-
+    
+    
+    def __initialize(self):
+        # spec.generateTransportData(database)
+        self.generateEnergyTransferModel()
+        
+        
     def generateThermoData(self, database, thermoClass=NASA, quantumMechanics=None):
         """
         Generates thermo data, first checking Libraries, then using either QM or Database.
