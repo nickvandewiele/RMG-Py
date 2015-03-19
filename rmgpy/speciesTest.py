@@ -153,15 +153,19 @@ class TestSpecies(unittest.TestCase):
         l = [self.species, deepcopy(self.species) ]
         self.assertIsNone(l.sort(key=lambda spc: spc.label))
      
-    def testCompareSpecies(self):
+    def test_compare(self):
         """
-        Test that the resonance isomers of two species are correctly compared.
+        Test that the compare method compares multiple types correctly.
         """        
         from copy import deepcopy
-        self.assertTrue(self.species.compare_molecules(deepcopy(self.species)))
-        self.assertTrue(Species(molecule=[Molecule().fromSMILES('[CH2]C=C')]).compare_molecules(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
-        self.assertFalse(Species(molecule=[Molecule().fromSMILES('[CH2]C=CC')]).compare_molecules(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
-        
+        spc = self.species
+        self.assertTrue(spc.compare(deepcopy(spc)))
+        self.assertTrue(Species(molecule=[Molecule().fromSMILES('[CH2]C=C')]).compare(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
+        self.assertFalse(Species(molecule=[Molecule().fromSMILES('[CH2]C=CC')]).compare(Species(molecule=[Molecule().fromSMILES('C=C[CH2]')])))
+        self.assertTrue(spc.compare(Molecule().fromSMILES('C=C')))
+        self.assertFalse(spc.compare(Molecule().fromSMILES('[CH2]C=C')))
+        self.assertFalse(spc.compare('foo'))
+    
         
 ################################################################################
 

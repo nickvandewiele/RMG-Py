@@ -45,6 +45,8 @@ transition states (first-order saddle points on a potential energy surface).
 import numpy
 import cython
 
+from sets import Set
+
 import rmgpy.quantity as quantity
 from rmgpy.molecule import Molecule
 
@@ -134,10 +136,10 @@ class Species(object):
         if not isinstance(other, Species): return False #different type
         elif self is other: return True #same reference in memory
         else:
-            return self.compare_molecules(other)
+            return self.__compare_molecules(other)
             
     
-    def compare_molecules(self, other):
+    def __compare_molecules(self, other):
         """
         Generates the product of the resonance isomers of both species and checks equality of the resonance
         isomers of both species. Converts the list of resonance isomers into a set and uses set equality.
@@ -146,6 +148,20 @@ class Species(object):
         
         from sets import Set
         return Set(self.molecule) == Set(other.molecule)
+    
+    
+    def compare(self, molecule_or_species):
+        """
+        Compares the molecules of this Species object to the parameter Molecule object.
+        Generates resonance isomers if necessary.
+        """
+        self.generateResonanceIsomers()
+        if isinstance(molecule_or_species, Species):
+            molecule_or_species.generateResonanceIsomers() 
+            return self.__compare_molecules(molecule_or_species)
+        elif isinstance(molecule_or_species, Molecule): return molecule_or_species in Set(self.molecule)
+        else: return False
+        
         
     def __repr__(self):
         """
