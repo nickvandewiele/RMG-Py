@@ -1102,6 +1102,14 @@ class TestMolecule(unittest.TestCase):
         l = [Molecule().fromSMILES('CCC'), Molecule().fromSMILES('CC')]
         self.assertIsNone(l.sort(key=lambda mol: mol.getFingerprint()))
         
+    def test_isIsomorphic(self):
+        """
+        Test that the isIsomorphic method compares two Molecule objects correctly.
+        """        
+        from copy import deepcopy
+        mol = self.molecule[0]
+        self.assertTrue(mol.isIsomorphic(deepcopy(mol)))
+        
     @work_in_progress
     def testCountInternalRotorsDimethylAcetylene(self):
         """
