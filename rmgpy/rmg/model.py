@@ -371,8 +371,7 @@ class CoreEdgeReactionModel:
         # First check cache and return if species is found
         for i, spec in enumerate(self.speciesCache):
             if spec is not None:
-                for mol in spec.molecule:
-                    if molecule.isIsomorphic(mol):
+                if spec.compare(molecule):
                         self.speciesCache.pop(i)
                         self.speciesCache.insert(0, spec)
                         return True, spec
@@ -384,7 +383,7 @@ class CoreEdgeReactionModel:
         except KeyError:
             return False, None
         for spec in speciesList:
-            if spec.isIsomorphic(molecule):
+            if spec.compare(molecule):
                 self.speciesCache.pop()
                 self.speciesCache.insert(0, spec)
                 return True, spec
