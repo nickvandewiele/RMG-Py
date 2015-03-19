@@ -166,6 +166,13 @@ class TestSpecies(unittest.TestCase):
         self.assertFalse(spc.compare(Molecule().fromSMILES('[CH2]C=C')))
         self.assertFalse(spc.compare('foo'))
     
+    def test_isIsomorphic(self):
+        """
+        Test that the isIsomorphic method compares two Species objects correctly.
+        """        
+        from copy import deepcopy
+        spc = self.species
+        self.assertTrue(spc.isIsomorphic(deepcopy(spc)))
         
 ################################################################################
 
