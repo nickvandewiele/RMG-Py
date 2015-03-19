@@ -414,31 +414,22 @@ class CoreEdgeReactionModel:
         # Check that the structure is not forbidden
 
         # If we're here then we're ready to make the new species
-        if label == '': 
-            # Use SMILES as default format for label
-            # However, SMILES can contain slashes (to describe the
-            # stereochemistry around double bonds); since RMG doesn't 
-            # distinguish cis and trans isomers, we'll just strip these out
-            # so that we can use the label in file paths
-            label = molecule.toSMILES().replace('/','').replace('\\','')
-        logging.debug('Creating new species {0}'.format(label))
         if reactive:
             self.speciesCounter += 1   # count only reactive species
             speciesIndex = self.speciesCounter
         else:
             speciesIndex = -1
         spec = Species(index=speciesIndex, label=label, molecule=[molecule], reactive=reactive)
+        logging.debug('Creating new species {0}'.format(spec.label))
         spec.coreSizeAtCreation = len(self.core.species)
-        spec.generateResonanceIsomers()
-        spec.molecularWeight = Quantity(spec.molecule[0].getMolecularWeight()*1000.,"amu")
-        # spec.generateTransportData(database)
-        spec.generateEnergyTransferModel()
-        formula = molecule.getFormula()
+        
+
+        formula = spec.formula
         if formula in self.speciesDict:
             self.speciesDict[formula].append(spec)
         else:
             self.speciesDict[formula] = [spec]
-
+        
 
         # Since the species is new, add it to the list of new species
         self.newSpeciesSet.add(spec)
