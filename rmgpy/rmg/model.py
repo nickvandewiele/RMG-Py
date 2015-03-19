@@ -37,6 +37,8 @@ import math
 import numpy
 import itertools
 
+from sets import Set
+
 from rmgpy.display import display
 #import rmgpy.chemkin
 import rmgpy.constants as constants
@@ -342,7 +344,7 @@ class CoreEdgeReactionModel:
         self.speciesCache = [None for i in range(4)]
         self.speciesCounter = 0
         self.reactionCounter = 0
-        self.newSpeciesList = []
+        self.newSpeciesSet = Set()
         self.newReactionList = []
         self.outputSpeciesList = []
         self.outputReactionList = []
@@ -433,7 +435,7 @@ class CoreEdgeReactionModel:
 
 
         # Since the species is new, add it to the list of new species
-        self.newSpeciesList.append(spec)
+        self.newSpeciesSet.add(spec)
 
         return spec, True
 
@@ -654,11 +656,11 @@ class CoreEdgeReactionModel:
         numOldEdgeSpecies = len(self.edge.species)
         numOldEdgeReactions = len(self.edge.reactions)
         reactionsMovedFromEdge = []
-        newReactionList = []; newSpeciesList = []
+        newReactionList = []; newSpeciesSet = Set()
             
         for obj in newObject:
             
-            self.newReactionList = []; self.newSpeciesList = []
+            self.newReactionList = []; self.newSpeciesSet = Set()
             newReactions = []
             pdepNetwork = None
             objectWasInEdge = False
@@ -730,12 +732,12 @@ class CoreEdgeReactionModel:
                 # moved these reactions from edge to core
                 numOldEdgeReactions -= len(reactionsMovedFromEdge)
             
-            newSpeciesList.extend(self.newSpeciesList)
+            newSpeciesSet.update(self.newSpeciesSet)
             newReactionList.extend(self.newReactionList)
             
         # Generate thermodynamics of new species
         logging.info('Generating thermodynamics for new species...')
-        for spec in newSpeciesList:
+        for spec in newSpeciesSet:
             spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
             spec.generateTransportData(database)
         
@@ -1300,7 +1302,7 @@ class CoreEdgeReactionModel:
         if react: raise NotImplementedError("react=True doesn't work yet")
         database = rmgpy.data.rmg.database
         
-        self.newReactionList = []; self.newSpeciesList = []
+        self.newReactionList = []; self.newSpeciesSet = Set()
 
         numOldCoreSpecies = len(self.core.species)
         numOldCoreReactions = len(self.core.reactions)
@@ -1311,11 +1313,11 @@ class CoreEdgeReactionModel:
 
         for entry in seedMechanism.entries.values():
             rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=seedMechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
-            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
+            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
         
-        for spec in self.newSpeciesList:
+        for spec in self.newSpeciesSet:
             if database.forbiddenStructures.isMoleculeForbidden(spec.molecule[0]):
                 if 'allowed' in self.speciesConstraints and 'seed mechanisms' in self.speciesConstraints['allowed']:
                     logging.warning("Species {0} from seed mechanism {1} is globally forbidden.  It will behave as an inert unless found in a seed mechanism or reaction library.".format(spec.label, seedMechanism.label))
@@ -1327,7 +1329,7 @@ class CoreEdgeReactionModel:
                 else:
                     raise ForbiddenStructureException("Species constraints forbids species {0} from seed mechanism {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, seedMechanism.label))
 
-        for spec in self.newSpeciesList:            
+        for spec in self.newSpeciesSet:            
             if spec.reactive: spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
             spec.generateTransportData(database)
             self.addSpeciesToCore(spec)
@@ -1364,7 +1366,7 @@ class CoreEdgeReactionModel:
         database = rmgpy.data.rmg.database
 
         self.newReactionList = []
-        self.newSpeciesList = []
+        self.newSpeciesSet = Set()
 
         numOldEdgeSpecies = len(self.edge.species)
         numOldEdgeReactions = len(self.edge.reactions)
@@ -1374,11 +1376,11 @@ class CoreEdgeReactionModel:
 
         for entry in reactionLibrary.entries.values():
             rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=reactionLibrary, kinetics=entry.data, duplicate=entry.item.duplicate)
-            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
+            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             if not isNew: logging.info("This library reaction was not new: {0}".format(rxn))
             
         # Perform species constraints and forbidden species checks
-        for spec in self.newSpeciesList:
+        for spec in self.newSpeciesSet:
             if database.forbiddenStructures.isMoleculeForbidden(spec.molecule[0]):
                 if 'allowed' in self.speciesConstraints and 'reaction libraries' in self.speciesConstraints['allowed']:
                     logging.warning("Species {0} from reaction library {1} is globally forbidden.  It will behave as an inert unless found in a seed mechanism or reaction library.".format(spec.label, reactionLibrary.label))
@@ -1390,7 +1392,7 @@ class CoreEdgeReactionModel:
                 else:
                     raise ForbiddenStructureException("Species constraints forbids species {0} from reaction library {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, reactionLibrary.label))
        
-        for spec in self.newSpeciesList:
+        for spec in self.newSpeciesSet:
             if spec.reactive: spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
             spec.generateTransportData(database)
             self.addSpeciesToEdge(spec)
