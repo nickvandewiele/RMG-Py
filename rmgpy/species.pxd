@@ -53,6 +53,8 @@ cdef class Species:
     
     cpdef generateResonanceIsomers(self)
     
+    cpdef __initialize(self)
+    
     cpdef bint isIsomorphic(self, other)
     
     cpdef fromAdjacencyList(self, adjlist)
