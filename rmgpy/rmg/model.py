@@ -46,6 +46,7 @@ from rmgpy.quantity import Quantity
 import rmgpy.species
 from rmgpy.thermo import Wilhoit, NASA, ThermoData
 from rmgpy.pdep import SingleExponentialDown
+from rmgpy.reaction import ReactionModel
 from rmgpy.statmech import  Conformer
 
 from rmgpy.data.base import ForbiddenStructureException
@@ -345,18 +346,6 @@ class Species(rmgpy.species.Species):
             T0 = (300,"K"),
             n = 0.85,
         )
-
-################################################################################
-
-class ReactionModel:
-    """
-    Represent a generic reaction model. A reaction model consists of `species`,
-    a list of species, and `reactions`, a list of reactions.
-    """
-
-    def __init__(self, species=None, reactions=None):
-        self.species = species or []
-        self.reactions = reactions or []
 
 ################################################################################
 
