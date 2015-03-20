@@ -170,7 +170,7 @@ class Database:
         return hash(self.name)
 
     def __eq__(self, other):
-        if not isinstance(other, rmgpy.data.base.Database): return False
+        if not isinstance(other, Database): return False
         return self.name == other.name
     
     def load(self, path, local_context=None, global_context=None):
