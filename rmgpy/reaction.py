@@ -159,6 +159,24 @@ class Reaction:
                            self.pairs
                            ))
 
+    def __hash__(self):
+        return hash((tuple(self.reactants), tuple(self.products)))
+    
+    def __richcmp__(x, y, op):
+        if op == 2:#Py_EQ
+            return x.__is_equal(y)
+        if op == 3:#Py_NE
+            return not x.__is_equal(y)
+        else:
+            assert False
+    
+    def __is_equal(self,other):
+        """Private method to test equality of two Species objects."""
+        if not isinstance(other, Reaction): return False #different type
+        elif self is other: return True #same reference in memory
+        else:
+            return self.isIsomorphic(other)
+        
     def toChemkin(self, speciesList=None, kinetics=True):
         """
         Return the chemkin-formatted string for this reaction.
