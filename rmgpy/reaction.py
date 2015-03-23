@@ -166,9 +166,9 @@ class Reaction:
     
     def __richcmp__(x, y, op):
         if op == 2:#Py_EQ
-            return x.__is_equal(y)
+            return x.is_equal(y)
         if op == 3:#Py_NE
-            return not x.__is_equal(y)
+            return not x.is_equal(y)
         else:
             assert False
     
