@@ -170,7 +170,7 @@ class Reaction:
         else:
             assert False
     
-    def __is_equal(self,other):
+    def is_equal(self,other):
         """Private method to test equality of two Species objects."""
         if not isinstance(other, Reaction): return False #different type
         elif self is other: return True #same reference in memory
