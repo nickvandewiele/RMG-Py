@@ -82,6 +82,19 @@ class LibraryReaction(Reaction):
         self.family = library
         self.entry = entry
 
+    def __eq__(self, other):
+        '''
+        Equality comparison. We only compare the underlying reaction attributes, not where the reaction
+        originally came from. Two reactions may still be considered identical even when they originate 
+        from two different libraries, or different entries.
+        '''
+        return super(LibraryReaction, self).is_equal(other)
+    
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    
     def __reduce__(self):
         """
         A helper function used when pickling an object.

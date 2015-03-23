@@ -93,6 +93,20 @@ class DepositoryReaction(Reaction):
                                      self.entry
                                      ))
 
+
+    def __eq__(self, other):
+        '''
+        Equality comparison. We only compare the underlying reaction attributes, not where the reaction
+        originally came from. Two reactions may still be considered identical even when they originate 
+        from two different depositories, or different entries.
+        '''
+        return super(DepositoryReaction, self).is_equal(other)
+    
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    
     def getSource(self):
         """
         Return the database that was the source of this reaction. For a
@@ -112,7 +126,7 @@ class KineticsDepository(Database):
 
     def __init__(self, label='', name='', shortDesc='', longDesc=''):
         Database.__init__(self, label=label, name=name, shortDesc=shortDesc, longDesc=longDesc)
-        
+    
     def __str__(self):
         return 'Kinetics Depository {0}'.format(self.label)
 
