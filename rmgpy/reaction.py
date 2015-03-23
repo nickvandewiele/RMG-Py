@@ -177,7 +177,13 @@ class Reaction:
         if not isinstance(other, Reaction): return False #different type
         elif self is other: return True #same reference in memory
         else:
-            return self.isIsomorphic(other)
+            
+            try:
+                eitherDirection = self.reversible and other.reversible
+            except AttributeError:
+                eitherDirection = False
+                
+            return self.isIsomorphic(other, eitherDirection=eitherDirection)
         
     def toChemkin(self, speciesList=None, kinetics=True):
         """
