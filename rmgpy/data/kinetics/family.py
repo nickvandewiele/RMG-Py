@@ -123,6 +123,14 @@ class TemplateReaction(Reaction):
                                    self.estimator
                                    ))
 
+    def __eq__(self, other):
+        return self.family == other.family and super(TemplateReaction, self).is_equal(other)
+    
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    
     def getSource(self):
         """
         Return the database that was the source of this reaction. For a
@@ -354,9 +362,10 @@ class KineticsFamily(Database):
         self.rules = None
         self.depositories = []
     
+    
     def __repr__(self):
         return '<ReactionFamily "{0}">'.format(self.label)
-
+    
     def loadOld(self, path):
         """
         Load an old-style RMG kinetics group additivity database from the

@@ -173,6 +173,9 @@ class Database:
         if not isinstance(other, Database): return False
         return self.name == other.name
     
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
     def load(self, path, local_context=None, global_context=None):
         """
         Load an RMG-style database from the file at location `path` on disk.

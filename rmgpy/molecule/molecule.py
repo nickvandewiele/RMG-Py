@@ -619,13 +619,13 @@ class Molecule(Graph):
             
     def __richcmp__(x, y, op):
         if op == 2:#Py_EQ
-            return x.__is_equal(y)
+            return x.is_equal(y)
         if op == 3:#Py_NE
-            return not x.__is_equal(y)
+            return not x.is_equal(y)
         else:
             assert False
     
-    def __is_equal(self,other):
+    def is_equal(self,other):
         """Private method to test equality of two Molecule objects."""
         if not isinstance(other, Molecule): return False #different type
         elif self is other: return True #same reference in memory
