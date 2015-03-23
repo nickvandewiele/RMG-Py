@@ -118,7 +118,7 @@ class Entry:
 
 ################################################################################
 
-class Database:
+class Database(object):
     """
     An RMG-style database, consisting of a dictionary of entries (associating
     items with data), and an optional tree for assigning a hierarchy to the
