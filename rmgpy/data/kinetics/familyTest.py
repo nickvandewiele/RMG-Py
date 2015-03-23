@@ -192,6 +192,17 @@ class TestTemplateReaction(unittest.TestCase):
             family = f1
         )
         
+    def makeReaction1Reverse(self):
+        f1 = self.database.families['H_Abstraction']
+
+        return TemplateReaction(
+            reactants = [self.ethyl], 
+            products = [self.h, self.ethylene],
+            kinetics = None,
+            transitionState = self.TS,
+            family = f1
+        )
+        
         
     def makeReaction2(self):
         f2 = self.database.families['1,3_Insertion_CO2']
@@ -220,3 +231,11 @@ class TestTemplateReaction(unittest.TestCase):
 
         self.assertTrue(self.reaction1 == deepcopy(self.reaction1))
         self.assertFalse(self.reaction1 != deepcopy(self.reaction1))
+        
+    def testEqualityReverseReaction(self):
+        r1 = self.makeReaction1()
+        r1v = self.makeReaction1Reverse()
+        
+        self.assertEqual(r1, r1v)
+        
+        pass
