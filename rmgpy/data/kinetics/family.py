@@ -124,7 +124,12 @@ class TemplateReaction(Reaction):
                                    ))
 
     def __eq__(self, other):
-        return self.family == other.family and super(TemplateReaction, self).is_equal(other)
+        '''
+        Equality comparison. We only compare the underlying reaction attributes, not where the reaction
+        originally came from. Two reactions may still be considered identical even when they originate 
+        from two different libraries, or different entries.
+        '''
+        return super(TemplateReaction, self).is_equal(other)
     
     
     def __ne__(self, other):
