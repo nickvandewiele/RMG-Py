@@ -160,7 +160,9 @@ class Reaction:
                            ))
 
     def __hash__(self):
-        return hash((tuple(self.reactants), tuple(self.products)))
+        r = sum([hash(r) for r in self.reactants])
+        p = sum([hash(p) for p in self.products])
+        return hash((r,p))
     
     def __richcmp__(x, y, op):
         if op == 2:#Py_EQ
