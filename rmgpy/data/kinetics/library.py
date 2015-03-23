@@ -87,9 +87,20 @@ class LibraryReaction(Reaction):
         Equality comparison. We only compare the underlying reaction attributes, not where the reaction
         originally came from. Two reactions may still be considered identical even when they originate 
         from two different libraries, or different entries.
+        
+        If one or the other reaction is denoted 'duplicate', then False is return only when both 
+        reactions belong to the same family.
         '''
-        return super(LibraryReaction, self).is_equal(other)
-    
+        isIso = super(LibraryReaction, self).is_equal(other)
+
+        try:
+            is_same_library = self.family == other.family
+        except AttributeError:
+            is_same_library = False
+
+        is_both_duplicate = self.duplicate and other.duplicate
+
+        return isIso and not (is_same_library and is_both_duplicate)
     
     def __ne__(self, other):
         return not self.__eq__(other)
