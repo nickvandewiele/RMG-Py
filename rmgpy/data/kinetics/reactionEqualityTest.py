@@ -1,6 +1,7 @@
 from copy import deepcopy
 import os
 import unittest 
+import logging
 
 from rmgpy import settings
 from rmgpy.data.rmg import RMGDatabase
@@ -249,6 +250,33 @@ class TestReaction(unittest.TestCase):
         
         self.assertEqual(rxn_lib, rxn_gen)
         self.assertEqual(rxn_lib, rxn_fam)
+    
+    def testNNH_GRIMech3N(self):
+        '''Test that two duplicate reactions of NNH <=> H + N2 are correctly read.'''
+        path = os.path.join(settings['database.directory'],'kinetics','libraries')
+        label = 'GRI-Mech3.0-N'
+        db = KineticsDatabase()
+        db.libraryOrder.append((label,'Reaction Library'))
+        db.loadLibraries(path, libraries=[label])
+        lib = db.libraries[label]
         
+        reactants = [ Molecule().fromAdjacencyList("""
+        multiplicity 2
+        1 N u0 p1 c0 {2,D} {3,S}
+        2 N u1 p1 c0 {1,D}
+        3 H u0 p0 c0 {1,S}
+            """
+        )]
+        products = [Molecule().fromSMILES('N#N'), Molecule().fromAdjacencyList("""
+        1 H u1 p0 c0 
+            """
+        )]
+        
+        rxns = db.generateReactionsFromLibrary(reactants, products, lib)
+        self.assertEqual(len(rxns), 2)
+        logging.info(rxns)
+        self.assertTrue(rxns[0].duplicate)
+        self.assertTrue(rxns[1].duplicate)
+        self.assertFalse(rxns[0] == rxns[1])
         
         
