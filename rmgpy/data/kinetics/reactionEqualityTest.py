@@ -212,6 +212,12 @@ class TestReaction(unittest.TestCase):
         self.assertEqual(rxn_fam, rxn_gen)
         self.assertEqual(rxn_fam, rxn_lib)
         self.assertEqual(rxn_lib, rxn_gen)
+        
+        #check for symmetry
+        self.assertEqual(rxn_fam == rxn_gen, rxn_gen == rxn_fam)
+        self.assertEqual(rxn_fam == rxn_lib, rxn_lib == rxn_fam)
+        self.assertEqual(rxn_lib == rxn_gen, rxn_gen == rxn_lib)
+        
         from sets import Set
         s = Set([rxn_fam, rxn_gen, rxn_lib])#
         self.assertEqual(len(s), 1)
