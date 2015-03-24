@@ -69,7 +69,7 @@ class ReactionError(Exception):
 
 ################################################################################
 
-class Reaction:
+class Reaction(object):
     """
     A chemical reaction. The attributes are:
     
