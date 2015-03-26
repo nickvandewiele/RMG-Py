@@ -6,6 +6,7 @@ from external.wip import work_in_progress
 from rmgpy.molecule.molecule import Atom, Bond, Molecule, ActionError
 from rmgpy.molecule.group import Group
 from rmgpy.molecule.element import getElement, elementList
+from rmgpy.species import Species
 
 ################################################################################
 
@@ -1109,7 +1110,17 @@ class TestMolecule(unittest.TestCase):
         from copy import deepcopy
         mol = self.molecule[0]
         self.assertTrue(mol.isIsomorphic(deepcopy(mol)))
+    
+    def testMoleculeSpeciesComparison(self):
+        m = Molecule().fromSMILES('C=C')
+        s = Species(
+            index=1,
+            label='C2H4',
+            molecule=[Molecule().fromSMILES('C=C')],
+            reactive=True,
+        )
         
+        self.assertFalse(s == m)
     @work_in_progress
     def testCountInternalRotorsDimethylAcetylene(self):
         """
