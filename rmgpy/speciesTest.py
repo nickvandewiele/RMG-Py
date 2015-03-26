@@ -152,7 +152,8 @@ class TestSpecies(unittest.TestCase):
         from copy import deepcopy
         l = [self.species, deepcopy(self.species) ]
         self.assertIsNone(l.sort(key=lambda spc: spc.label))
-     
+        self.assertIsNotNone(sorted(l))
+        
     def test_compare(self):
         """
         Test that the compare method compares multiple types correctly.
@@ -173,6 +174,7 @@ class TestSpecies(unittest.TestCase):
         from copy import deepcopy
         spc = self.species
         self.assertTrue(spc.isIsomorphic(deepcopy(spc)))
+    
         
 ################################################################################
 
