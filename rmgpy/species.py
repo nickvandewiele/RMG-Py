@@ -159,7 +159,9 @@ class Species(object):
         elif isinstance(molecule_or_species, Molecule): return molecule_or_species in Set(self.molecule)
         else: return False
         
-        
+    def getInChI(self):
+        return self.molecule[0].toInChI() if self.molecule else ''
+    
     def __generate_label(self):
         """
         Private method that generates a string and stores it in the attribute label.
