@@ -35,6 +35,12 @@ class PseudoSpecies:
         return "PseudoSpecies('{0}')".format(self.label)
     def __str__(self):
         return self.label
+    def __hash__(self):
+        return hash(self.label)
+    def __eq__(self, other):
+        return self.isIsomorphic(other)
+    def __gt__(self, other):
+        return self.label > other.label
     def isIsomorphic(self, other):
         return self.label.lower() == other.label.lower()
 
