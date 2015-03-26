@@ -106,7 +106,8 @@ cdef class Molecule(Graph):
     cdef public object rdMol
     cdef public int rdMolConfId
     cdef str _fingerprint
-        
+    cdef str InChI
+    
     cpdef str getFingerprint(self)
     
     cpdef addAtom(self, Atom atom)

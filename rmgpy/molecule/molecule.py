@@ -608,7 +608,9 @@ class Molecule(Graph):
         self.multiplicity = multiplicity
         self._fingerprint = None
         if SMILES != '': self.fromSMILES(SMILES)
-        elif InChI != '': self.fromInChI(InChI)
+        elif InChI != '': 
+            self.fromInChI(InChI)
+            self.InChI = InChI
         elif SMARTS != '': self.fromSMARTS(SMARTS)
         if multiplicity != -187:  # it was set explicitly, so re-set it (fromSMILES etc may have changed it)
             self.multiplicity = multiplicity
@@ -1351,7 +1353,8 @@ class Molecule(Graph):
             if not Chem.inchi.INCHI_AVAILABLE:
                 return "RDKitInstalledWithoutInChI"
             rdkitmol = self.toRDKitMol()
-            return Chem.inchi.MolToInchi(rdkitmol, options='-SNon')
+            self.InChI = Chem.inchi.MolToInchi(rdkitmol, options='-SNon')
+            return self.InChI
         except:
             pass
 
@@ -1359,7 +1362,8 @@ class Molecule(Graph):
         obConversion = openbabel.OBConversion()
         obConversion.SetOutFormat('inchi')
         obConversion.SetOptions('w', openbabel.OBConversion.OUTOPTIONS)
-        return obConversion.WriteString(obmol).strip()
+        self.InChI = obConversion.WriteString(obmol).strip()
+        return self.InChI
 
     def toAugmentedInChI(self):
         """
