@@ -121,12 +121,21 @@ class Species(object):
         return hash(tuple([mol.getFingerprint() for mol in self.molecule]))
     
     def __richcmp__(x, y, op):
-        if op == 2:#Py_EQ
+        if op == 0:#Py_LT:
+            return x.getInChI() < y.getInChI()
+        elif op == 1:#Py_LE:
+            return x.getInChI() <= y.getInChI()
+        elif op == 2:#Py_EQ:
             return x.is_equal(y)
-        if op == 3:#Py_NE
+        elif op == 3:#Py_NE:
             return not x.is_equal(y)
+        elif op == 4:#Py_GT:
+            return x.getInChI() > y.getInChI()
+        elif op == 5:#Py_GE:
+            return x.getInChI() >= y.getInChI()
         else:
             assert False
+            
     
     def is_equal(self,other):
         """Private method to test equality of two Species objects."""
