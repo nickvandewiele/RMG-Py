@@ -1564,21 +1564,36 @@ class KineticsFamily(Database):
         # The reaction list may contain duplicates of the same reaction
         # These duplicates should be combined (by increasing the degeneracy of
         # one of the copies and removing the others)
-        unique_rxns = Set(rxnList)
-        for rxn in unique_rxns:
-            rxn.degeneracy = rxnList.count(rxn)
         
-        rxnList = list(unique_rxns)
+        # convert Molecule's into Species to auto-generate resonance isomers.
+        ##first map reactions:
+
+        rxnList_clone = []
+        for rxn in rxnList:
+            rxnList_clone.append(rxn.copy())
+            
+        for rxn in rxnList_clone:
+            reactants_spc = []
+            for reactant in rxn.reactants:
+                
+                reactant = Species(molecule=[reactant])
+                reactants_spc.append(reactant)
+            rxn.reactants = reactants_spc
+            products_spc = []
+            for product in rxn.products:
+                product = Species(molecule=[product])
+                products_spc.append(product)
+            rxn.products = products_spc
+            
+                
+        rxnList_orig = rxnList[:]
+        rxnList = []
         
-        # For R_Recombination reactions, the degeneracy is twice what it should
-        # be, so divide those by two
-        # This is hardcoding of reaction families!
-        # For reactions of the form A + A -> products, the degeneracy is twice
-        # what it should be, so divide those by two
-        if sameReactants or self.label.lower().startswith('r_recombination'):
-            for rxn in rxnList:
-                assert(rxn.degeneracy % 2 == 0)
-                rxn.degeneracy /= 2
+        for rxn in Set(rxnList_clone):
+            rxn_orig = rxnList_orig[rxnList_clone.index(rxn)]
+            rxn_orig.degeneracy = rxnList_clone.count(rxn)
+            rxnList.append(rxn_orig)
+            
                 
         # Determine the reactant-product pairs to use for flux analysis
         # Also store the reaction template (useful so we can easily get the kinetics later)
