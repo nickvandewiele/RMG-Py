@@ -1476,44 +1476,10 @@ class KineticsFamily(Database):
         return rxnList
         
         
-    def identifyIdenticalReactions(self, reactants, rxnList):
-                # The reaction list may contain duplicates of the same reaction
-        # These duplicates should be combined (by increasing the degeneracy of
-        # one of the copies and removing the others)
-        
-        # convert Molecule's into Species to auto-generate resonance isomers.
-        ##first map reactions:
-        #sort reactants/products of each reaction:
-        
-
-            
-        rxnList_clone = []
-        for rxn in rxnList:
-            rxnList_clone.append(rxn.copy())
-        
-        for reaction in rxnList_clone:
-            reaction.reactants = sorted(reaction.reactants)
-            reaction.products = sorted(reaction.products)
-            
-        for rxn in rxnList_clone:
-            reactants_spc = []
-            for reactant in rxn.reactants:
-                reactant = Species(molecule=[reactant])
-                reactants_spc.append(reactant)
-            rxn.reactants = reactants_spc
-            products_spc = []
-            for product in rxn.products:
-                product = Species(molecule=[product])
-                products_spc.append(product)
-            rxn.products = products_spc
-            
-        for reaction in rxnList:
-            reaction.reactants = sorted(reaction.reactants)
-            reaction.products = sorted(reaction.products)
-            
+    def updateDegeneracy(self, reactants, rxnList, rxnList_clone):
         unique_rxns = Set(rxnList_clone)
         
-        for rxn in unique_rxns:
+        for rxn in Set(rxnList_clone):
             rxn.degeneracy = rxnList_clone.count(rxn)
             
         rxnList_orig = rxnList[:]
@@ -1544,6 +1510,23 @@ class KineticsFamily(Database):
             for rxn in rxnList:
                 assert(rxn.degeneracy % 2 == 0)
                 rxn.degeneracy /= 2
+        
+        return rxnList
+    
+    def identifyIdenticalReactions(self, reactants, rxnList):
+                # The reaction list may contain duplicates of the same reaction
+        # These duplicates should be combined (by increasing the degeneracy of
+        # one of the copies and removing the others)
+        
+        # convert Molecule's into Species to auto-generate resonance isomers.
+        ##first map reactions:
+        #sort reactants/products of each reaction:
+        
+
+            
+        rxnList_clone = self.createCloneButPopulateWithSpecies(rxnList)
+        
+        rxnList = self.updateDegeneracy(reactants, rxnList, rxnList_clone)
                 
         return rxnList
     
@@ -1598,7 +1581,31 @@ class KineticsFamily(Database):
             raise Exception('Unable to calculate degeneracy for reaction {0} in reaction family {1}.'.format(reaction, self.label))
         return rxnList[0].degeneracy
         
+    
+    def createCloneButPopulateWithSpecies(self, rxnList):
+        rxnList_clone = []
+        for rxn in rxnList:
+            rxnList_clone.append(rxn.copy())
         
+        for reaction in rxnList_clone:
+            reaction.reactants = sorted(reaction.reactants)
+            reaction.products = sorted(reaction.products)
+            
+        for rxn in rxnList_clone:
+            reactants_spc = []
+            for reactant in rxn.reactants:
+                reactant = Species(molecule=[reactant])
+                reactants_spc.append(reactant)
+            rxn.reactants = reactants_spc
+            products_spc = []
+            for product in rxn.products:
+                product = Species(molecule=[product])
+                products_spc.append(product)
+            rxn.products = products_spc
+            
+        return rxnList_clone
+    
+    
     def __generateReactions(self, reactants, products=None, forward=True, failsSpeciesConstraints=None):
         """
         Generate a list of all of the possible reactions of this family between
@@ -1655,23 +1662,7 @@ class KineticsFamily(Database):
         
         # convert Molecule's into Species to auto-generate resonance isomers.
         ##first map reactions:
-
-        rxnList_clone = []
-        for rxn in rxnList:
-            rxnList_clone.append(rxn.copy())
-            
-        for rxn in rxnList_clone:
-            reactants_spc = []
-            for reactant in rxn.reactants:
-                
-                reactant = Species(molecule=[reactant])
-                reactants_spc.append(reactant)
-            rxn.reactants = reactants_spc
-            products_spc = []
-            for product in rxn.products:
-                product = Species(molecule=[product])
-                products_spc.append(product)
-            rxn.products = products_spc
+        rxnList_clone = self.createCloneButPopulateWithSpecies(rxnList)
             
                 
         rxnList_orig = rxnList[:]
