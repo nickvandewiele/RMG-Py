@@ -1605,6 +1605,12 @@ class KineticsFamily(Database):
             
         # This reaction list has only checked for duplicates within itself, not
         # with the global list of reactions
+        
+        #sort reactants/products of each reaction:
+        for reaction in rxnList:
+            reaction.reactants = sorted(reaction.reactants)
+            reaction.products = sorted(reaction.products)
+        
         return rxnList
 
     def getReactionPairs(self, reaction):
