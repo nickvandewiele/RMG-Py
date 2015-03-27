@@ -239,3 +239,9 @@ class TestTemplateReaction(unittest.TestCase):
         self.assertEqual(r1, r1v)
         
         pass
+    
+    def testCopy(self):
+        r1 = self.makeReaction1()
+        r1.labeledAtoms = 'foo'
+        other = r1.copy()
+        self.assertEquals(r1.labeledAtoms, other.labeledAtoms)
