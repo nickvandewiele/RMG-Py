@@ -528,7 +528,14 @@ class TestReaction(unittest.TestCase):
         d[self.reaction] = 'foo'
         d[deepcopy(self.reaction)] = 'foo'
         self.assertEquals(len(d.keys()), 1)
+    
+    def testReactionCopy(self):
+        labeledAtoms = [('1', 'foo')]
+        rxn = self.reaction
+        rxn.labeledAtoms = labeledAtoms
         
+        other = rxn.copy()
+        self.assertNotNone(other.labeledAtoms)
         
 ################################################################################
 
