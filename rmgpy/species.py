@@ -44,6 +44,7 @@ transition states (first-order saddle points on a potential energy surface).
 
 import numpy
 import cython
+from copy import deepcopy
 
 from sets import Set
 
@@ -140,6 +141,11 @@ class Species(object):
     def getComparator(self):
         '''Returns a value that can be used to sort two Species objects'''
         return self.getInChI()
+    
+    def copy(self, deep=True):
+        '''deep copy'''
+        return deepcopy(self)
+        
     def is_equal(self,other):
         """Private method to test equality of two Species objects."""
         if not isinstance(other, Species): return False #different type
