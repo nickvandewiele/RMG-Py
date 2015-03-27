@@ -137,6 +137,32 @@ class TemplateReaction(Reaction):
     def __ne__(self, other):
         return not self.__eq__(other)
     
+    def copy(self):
+        other = TemplateReaction.__new__(TemplateReaction)
+        other.index = self.index
+        other.label = self.label
+        other.reactants = []
+        for reactant in self.reactants:
+            other.reactants.append(reactant.copy(deep=True))
+        other.products = []
+        for product in self.products:
+            other.products.append(product.copy(deep=True))
+        other.kinetics = deepcopy(self.kinetics)
+        other.reversible = self.reversible
+        other.transitionState = deepcopy(self.transitionState)
+        other.duplicate = self.duplicate
+        other.degeneracy = self.degeneracy
+        other.pairs = deepcopy(self.pairs)
+        '''
+        other.family = deepcopy(self.family)
+        other.template = deepcopy(self.template)
+        other.estimator = deepcopy(self.estimator)
+        '''
+                
+        if self.labeledAtoms:
+            other.labeledAtoms = deepcopy(self.labeledAtoms)
+            
+        return other
     
     def getSource(self):
         """
