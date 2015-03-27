@@ -1522,101 +1522,18 @@ class KineticsFamily(Database):
 
         # Unimolecular reactants: A --> products
         if len(reactants) == 1 and len(template.reactants) == 1:
+            rxnList.extend(self.generateUnimolecularReactions(reactants, forward, template))
 
-            # Iterate over all resonance isomers of the reactant
-            for molecule in reactants[0]:
-
-                mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
-                for map in mappings:
-                    reactantStructures = [molecule]
-                    try:
-                        productStructures = self.__generateProductStructures(reactantStructures, [map], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                    except ForbiddenStructureException:
-                        pass
-                    else:
-                        if productStructures is not None:
-                            rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                            if rxn: rxnList.append(rxn)
 
         # Bimolecular reactants: A + B --> products
         elif len(reactants) == 2 and len(template.reactants) == 2:
-
-            moleculesA = reactants[0]
-            moleculesB = reactants[1]
-
-            # Iterate over all resonance isomers of the reactant
-            for moleculeA in moleculesA:
-                for moleculeB in moleculesB:
-
-                    # Reactants stored as A + B
-                    mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[0])
-                    mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[1])
-
-                    # Iterate over each pair of matches (A, B)
-                    for mapA in mappingsA:
-                        for mapB in mappingsB:
-                            reactantStructures = [moleculeA, moleculeB]
-                            try:
-                                productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                            except ForbiddenStructureException:
-                                pass
-                            else:
-                                if productStructures is not None:
-                                    rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                    if rxn: rxnList.append(rxn)
-
-                    # Only check for swapped reactants if they are different
-                    if reactants[0] is not reactants[1]:
-
-                        # Reactants stored as B + A
-                        mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[1])
-                        mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[0])
-
-                        # Iterate over each pair of matches (A, B)
-                        for mapA in mappingsA:
-                            for mapB in mappingsB:
-                                reactantStructures = [moleculeA, moleculeB]
-                                try:
-                                    productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                                except ForbiddenStructureException:
-                                    pass
-                                else:
-                                    if productStructures is not None:
-                                        rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                        if rxn: rxnList.append(rxn)
+            rxnList.extend(self.generateBimolecularReactions(reactants, forward, template))
+            
+            
         # If products is given, remove reactions from the reaction list that
         # don't generate the given products
         if products is not None:
-            
-            products = [product.generateResonanceIsomers() for product in products]
-            
-            rxnList0 = rxnList[:]
-            rxnList = []
-            index = 0
-            for reaction in rxnList0:
-            
-                products0 = reaction.products if forward else reaction.reactants
-                    
-                # Skip reactions that don't match the given products
-                match = False
-
-                if len(products) == len(products0) == 1:
-                    for product in products[0]:
-                        if products0[0].isIsomorphic(product):
-                            match = True
-                            break
-                elif len(products) == len(products0) == 2:
-                    for productA in products[0]:
-                        for productB in products[1]:
-                            if products0[0].isIsomorphic(productA) and products0[1].isIsomorphic(productB):
-                                match = True
-                                break
-                            elif products0[0].isIsomorphic(productB) and products0[1].isIsomorphic(productA):
-                                match = True
-                                break
-                    
-                if match: 
-                    rxnList.append(reaction)
+            rxnList = self.filterReactions(rxnList, products, forward)
             
         # The reaction list may contain duplicates of the same reaction
         # These duplicates should be combined (by increasing the degeneracy of
