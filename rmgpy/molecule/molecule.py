@@ -631,6 +631,7 @@ class Molecule(Graph):
         """Private method to test equality of two Molecule objects."""
         if not isinstance(other, Molecule): return False #different type
         elif self is other: return True #same reference in memory
+        elif self.getFingerprint() != other.getFingerprint(): return False
         else:
             return self.isIsomorphic(other)
             
