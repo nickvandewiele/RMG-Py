@@ -122,21 +122,12 @@ class Species(object):
         return hash(tuple([mol.getFingerprint() for mol in self.molecule]))
     
     def __richcmp__(x, y, op):
-        if op == 0:#Py_LT:
-            return x.getInChI() < y.getInChI()
-        elif op == 1:#Py_LE:
-            return x.getInChI() <= y.getInChI()
-        elif op == 2:#Py_EQ:
+        if op == 2:#Py_EQ
             return x.is_equal(y)
-        elif op == 3:#Py_NE:
+        if op == 3:#Py_NE
             return not x.is_equal(y)
-        elif op == 4:#Py_GT:
-            return x.getInChI() > y.getInChI()
-        elif op == 5:#Py_GE:
-            return x.getInChI() >= y.getInChI()
         else:
             assert False
-            
         
     def copy(self, deep=True):
         '''deep copy'''
