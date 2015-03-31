@@ -1587,10 +1587,6 @@ class KineticsFamily(Database):
         for rxn in rxnList:
             rxnList_clone.append(rxn.copy())
         
-        for reaction in rxnList_clone:
-            reaction.reactants = sorted(reaction.reactants)
-            reaction.products = sorted(reaction.products)
-            
         for rxn in rxnList_clone:
             reactants_spc = []
             for reactant in rxn.reactants:
@@ -1699,11 +1695,6 @@ class KineticsFamily(Database):
             
         # This reaction list has only checked for duplicates within itself, not
         # with the global list of reactions
-        
-        #sort reactants/products of each reaction:
-        for reaction in rxnList:
-            reaction.reactants = sorted(reaction.reactants)
-            reaction.products = sorted(reaction.products)
         
         return rxnList
         
