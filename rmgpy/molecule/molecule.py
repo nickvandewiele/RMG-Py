@@ -621,24 +621,20 @@ class Molecule(Graph):
             
     def __richcmp__(x, y, op):
         if op == 0:#Py_LT:
-            return x.getComparator() < y.getComparator()
+            return x.toInChI() < y.toInChI()
         elif op == 1:#Py_LE:
-            return x.getComparator() <= y.getComparator()
+            return x.toInChI() <= y.toInChI()
         elif op == 2:#Py_EQ:
             return x.is_equal(y)
         elif op == 3:#Py_NE:
             return not x.is_equal(y)
         elif op == 4:#Py_GT:
-            return x.getComparator() > y.getComparator()
+            return x.toInChI() > y.toInChI()
         elif op == 5:#Py_GE:
-            return x.getComparator() >= y.getComparator()
+            return x.toInChI() >= y.toInChI()
         else:
             assert False
 
-    
-    def getComparator(self):
-        '''Returns a value that can be used to sort two Molecule objects'''
-        return self.toInChI()
     
     def is_equal(self,other):
         """Private method to test equality of two Molecule objects."""
