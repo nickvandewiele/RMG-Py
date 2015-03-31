@@ -123,29 +123,25 @@ class Species(object):
     
     def __richcmp__(x, y, op):
         if op == 0:#Py_LT:
-            return x.getComparator() < y.getComparator()
+            return x.getInChI() < y.getInChI()
         elif op == 1:#Py_LE:
-            return x.getComparator() <= y.getComparator()
+            return x.getInChI() <= y.getInChI()
         elif op == 2:#Py_EQ:
             return x.is_equal(y)
         elif op == 3:#Py_NE:
             return not x.is_equal(y)
         elif op == 4:#Py_GT:
-            return x.getComparator() > y.getComparator()
+            return x.getInChI() > y.getInChI()
         elif op == 5:#Py_GE:
-            return x.getComparator() >= y.getComparator()
+            return x.getInChI() >= y.getInChI()
         else:
             assert False
             
-    
-    def getComparator(self):
-        '''Returns a value that can be used to sort two Species objects'''
-        return self.getInChI()
-    
+        
     def copy(self, deep=True):
         '''deep copy'''
         return deepcopy(self)
-        
+
     def is_equal(self,other):
         """Private method to test equality of two Species objects."""
         if not isinstance(other, Species): return False #different type
