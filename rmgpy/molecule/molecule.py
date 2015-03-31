@@ -614,27 +614,18 @@ class Molecule(Graph):
         elif SMARTS != '': self.fromSMARTS(SMARTS)
         if multiplicity != -187:  # it was set explicitly, so re-set it (fromSMILES etc may have changed it)
             self.multiplicity = multiplicity
-        
+    
     
     def __hash__(self):
         return hash((self.getFingerprint()))
             
     def __richcmp__(x, y, op):
-        if op == 0:#Py_LT:
-            return x.toInChI() < y.toInChI()
-        elif op == 1:#Py_LE:
-            return x.toInChI() <= y.toInChI()
-        elif op == 2:#Py_EQ:
+        if op == 2:#Py_EQ
             return x.is_equal(y)
-        elif op == 3:#Py_NE:
+        if op == 3:#Py_NE
             return not x.is_equal(y)
-        elif op == 4:#Py_GT:
-            return x.toInChI() > y.toInChI()
-        elif op == 5:#Py_GE:
-            return x.toInChI() >= y.toInChI()
         else:
             assert False
-
     
     def is_equal(self,other):
         """Private method to test equality of two Molecule objects."""
