@@ -1614,7 +1614,7 @@ class KineticsFamily(Database):
         structure and returns `True` if it is forbidden.
         """
 
-        rxnList = []; speciesList = []
+        rxnList = []
 
         # Wrap each reactant in a list if not already done (this is done to 
         # allow for passing multiple resonance structures for each molecule)
