@@ -1621,14 +1621,6 @@ class KineticsFamily(Database):
         # This also makes a copy of the reactants list so we don't modify the
         # original
         reactants = [reactant if isinstance(reactant, list) else [reactant] for reactant in reactants]
-
-        sameReactants = False
-        if len(reactants) == 2 and len(reactants[0]) == len(reactants[1]):
-            reactantA = reactants[0][0]
-            for reactantB in reactants[1]:
-                if reactantA.isIsomorphic(reactantB):
-                    sameReactants = True
-                    break
                     
         if forward:
             template = self.forwardTemplate
