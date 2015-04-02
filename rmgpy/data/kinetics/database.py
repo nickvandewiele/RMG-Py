@@ -399,10 +399,10 @@ class KineticsDatabase(object):
             reactionList = filterReactions(reactants, products, reactionList)
         return reactionList
 
-    def generateReactionsFromFamilies(self, reactants, products, only_families=None, failsSpeciesConstraints=None):
+    def generateReactionsFromFamilies(self, reactants, products=None, only_families=None, failsSpeciesConstraints=None):
         """
         Generate all reactions between the provided list of one or two
-        `reactants`, which should be :class:`Molecule` objects. This method
+        `reactants`, which should be :class:`Species` objects. This method
         applies the reaction family.
         If `only_families` is a list of strings, only families with those labels
         are used.
@@ -484,17 +484,15 @@ class KineticsDatabase(object):
             reaction = Reaction(reactants=[], products=[])
             for molecule in entry.item.reactants:
                 reactant = Species(molecule=[molecule])
-                reactant.generateResonanceIsomers()
                 reactant.thermo = generateThermoData(reactant, thermoDatabase)
                 reaction.reactants.append(reactant)
             for molecule in entry.item.products:
                 product = Species(molecule=[molecule])
-                product.generateResonanceIsomers()
                 product.thermo = generateThermoData(product, thermoDatabase)
                 reaction.products.append(product)
 
             # Generate all possible reactions involving the reactant species
-            generatedReactions = self.generateReactionsFromFamilies([reactant.molecule for reactant in reaction.reactants], [], only_families=[family])
+            generatedReactions = self.generateReactionsFromFamilies([reactant for reactant in reaction.reactants], [], only_families=[family])
 
             # Remove from that set any reactions that don't produce the desired reactants and products
             forward = []; reverse = []

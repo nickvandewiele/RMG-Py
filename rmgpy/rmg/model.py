@@ -611,15 +611,9 @@ class CoreEdgeReactionModel:
         """
         reactionList = []
         if speciesB is None:
-            for moleculeA in speciesA.molecule:
-                reactionList.extend(database.kinetics.generateReactionsFromFamilies([moleculeA], products=None, failsSpeciesConstraints=self.failsSpeciesConstraints))
-                moleculeA.clearLabeledAtoms()
+            reactionList.extend(database.kinetics.generateReactionsFromFamilies([speciesA], failsSpeciesConstraints=self.failsSpeciesConstraints))
         else:
-            for moleculeA in speciesA.molecule:
-                for moleculeB in speciesB.molecule:
-                    reactionList.extend(database.kinetics.generateReactionsFromFamilies([moleculeA, moleculeB], products=None, failsSpeciesConstraints=self.failsSpeciesConstraints))
-                    moleculeA.clearLabeledAtoms()
-                    moleculeB.clearLabeledAtoms()
+            reactionList.extend(database.kinetics.generateReactionsFromFamilies([speciesA, speciesB], failsSpeciesConstraints=self.failsSpeciesConstraints))
         return reactionList
 
     def enlarge(self, newObject):
