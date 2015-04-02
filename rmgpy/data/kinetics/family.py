@@ -188,20 +188,20 @@ class TemplateReaction(Reaction):
             # Hardcoding for hydrogen abstraction: pair the reactant containing
             # *1 with the product containing *3 and vice versa
             assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].containsLabeledAtom('*1'):
-                if self.products[0].containsLabeledAtom('*3'):
+            if self.reactants[0].molecule[0].containsLabeledAtom('*1'):
+                if self.products[0].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].containsLabeledAtom('*3'):
+                elif self.products[1].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
                     error = True
-            elif self.reactants[1].containsLabeledAtom('*1'):
-                if self.products[1].containsLabeledAtom('*3'):
+            elif self.reactants[1].molecule[0].containsLabeledAtom('*1'):
+                if self.products[1].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].containsLabeledAtom('*3'):
+                elif self.products[0].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
@@ -210,20 +210,20 @@ class TemplateReaction(Reaction):
             # Hardcoding for disproportionation: pair the reactant containing
             # *1 with the product containing *1
             assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].containsLabeledAtom('*1'):
-                if self.products[0].containsLabeledAtom('*1'):
+            if self.reactants[0].molecule[0].containsLabeledAtom('*1'):
+                if self.products[0].molecule[0].containsLabeledAtom('*1'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].containsLabeledAtom('*1'):
+                elif self.products[1].molecule[0].containsLabeledAtom('*1'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
                     error = True
-            elif self.reactants[1].containsLabeledAtom('*1'):
-                if self.products[1].containsLabeledAtom('*1'):
+            elif self.reactants[1].molecule[0].containsLabeledAtom('*1'):
+                if self.products[1].molecule[0].containsLabeledAtom('*1'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].containsLabeledAtom('*1'):
+                elif self.products[0].molecule[0].containsLabeledAtom('*1'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
@@ -232,20 +232,20 @@ class TemplateReaction(Reaction):
             # Hardcoding for Substitution_O: pair the reactant containing
             # *2 with the product containing *3 and vice versa
             assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].containsLabeledAtom('*2'):
-                if self.products[0].containsLabeledAtom('*3'):
+            if self.reactants[0].molecule[0].containsLabeledAtom('*2'):
+                if self.products[0].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].containsLabeledAtom('*3'):
+                elif self.products[1].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
                     error = True
-            elif self.reactants[1].containsLabeledAtom('*2'):
-                if self.products[1].containsLabeledAtom('*3'):
+            elif self.reactants[1].molecule[0].containsLabeledAtom('*2'):
+                if self.products[1].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[0]])
                     pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].containsLabeledAtom('*3'):
+                elif self.products[0].molecule[0].containsLabeledAtom('*3'):
                     pairs.append([self.reactants[0],self.products[1]])
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
@@ -1014,25 +1014,22 @@ class KineticsFamily(Database):
             assert isinstance(entry.data, Arrhenius)
             data = deepcopy(entry.data)
             data.changeT0(1)
-            
             # Estimate the thermo for the reactants and products
             # trainingSet=True used later to does not allow species to match a liquid phase library and get corrected thermo which will affect reverse rate calculation
-            item = Reaction(reactants=[m.molecule[0].copy(deep=True) for m in entry.item.reactants], products=[m.molecule[0].copy(deep=True) for m in entry.item.products])
-            item.reactants = [Species(molecule=[m]) for m in item.reactants]
+            item = Reaction(reactants=[m.copy() for m in entry.item.reactants], products=[m.copy() for m in entry.item.products])
+            
             for reactant in item.reactants:
-                reactant.generateResonanceIsomers()
                 reactant.thermo = thermoDatabase.getThermoData(reactant, trainingSet=True) 
-            item.products = [Species(molecule=[m]) for m in item.products]
+                
             for product in item.products:
-                product.generateResonanceIsomers()
                 product.thermo = thermoDatabase.getThermoData(product,trainingSet=True)
             # Now that we have the thermo, we can get the reverse k(T)
             item.kinetics = data
             data = item.generateReverseRateCoefficient()
             
-            item = Reaction(reactants=[m.molecule[0].copy(deep=True) for m in entry.item.products], products=[m.molecule[0].copy(deep=True) for m in entry.item.reactants])
+            item = Reaction(reactants=[m.copy() for m in entry.item.products], products=[m.copy() for m in entry.item.reactants])
             template = self.getReactionTemplate(item)
-            item.degeneracy = self.calculateDegeneracy(item)
+            self.calculate_degeneracy(item)
             
             new_entry = Entry(
                 index = index,
@@ -1281,15 +1278,19 @@ class KineticsFamily(Database):
         provided `reactants` and `products` as lists of :class:`Molecule`
         objects.
         """
+        
+        # Return the reactions as containing Species objects, not Molecule objects
+        reactants = [Species(molecule=[mol]) for mol in reactants]
+        products = [Species(molecule=[mol]) for mol in products]
 
         # Make sure the products are in fact different than the reactants
         if len(reactants) == len(products) == 1:
-            if reactants[0].isIsomorphic(products[0]):
+            if reactants[0] == products[0]:
                 return None
         elif len(reactants) == len(products) == 2:
-            if reactants[0].isIsomorphic(products[0]) and reactants[1].isIsomorphic(products[1]):
+            if reactants[0] == products[0] and reactants[1] == products[1]:
                 return None
-            elif reactants[0].isIsomorphic(products[1]) and reactants[1].isIsomorphic(products[0]):
+            elif reactants[0] == products[1] and reactants[1] == products[0]:
                 return None
 
         # Create and return template reaction object
@@ -1301,12 +1302,13 @@ class KineticsFamily(Database):
             family = self,
         )
         
+        reaction.getReactionPairs(self.label)
         
         # Store the labeled atoms so we can recover them later
         # (e.g. for generating reaction pairs and templates)
         labeledAtoms = []
         for reactant in reaction.reactants:
-            for label, atom in reactant.getLabeledAtoms().items():
+            for label, atom in reactant.molecule[0].getLabeledAtoms().items():
                 labeledAtoms.append((label, atom))
         reaction.labeledAtoms = labeledAtoms
         
@@ -1333,7 +1335,7 @@ class KineticsFamily(Database):
     def generateReactions(self, reactants, failsSpeciesConstraints=None):
         """
         Generate all reactions between the provided list of one or two
-        `reactants`, which should be either single :class:`Molecule` objects
+        `reactants`, which should be either single :class:`Species` objects
         or lists of same. Does not estimate the kinetics of these reactions
         at this time. Returns a list of :class:`TemplateReaction` objects
         using :class:`Species` objects for both reactants and products. The
@@ -1364,24 +1366,18 @@ class KineticsFamily(Database):
             # Reverse direction (the direction in which kinetics is not defined)
             reactionList.extend(self.__generateReactions(reactants, forward=False, failsSpeciesConstraints=failsSpeciesConstraints))
             
-        # Return the reactions as containing Species objects, not Molecule objects
-        for reaction in reactionList:
-            moleculeDict = {}
-            for molecule in reaction.reactants:
-                moleculeDict[molecule] = Species(molecule=[molecule])
-            for molecule in reaction.products:
-                moleculeDict[molecule] = Species(molecule=[molecule])
-            reaction.reactants = [moleculeDict[molecule] for molecule in reaction.reactants]
-            reaction.products = [moleculeDict[molecule] for molecule in reaction.products]
-            reaction.pairs = [(moleculeDict[reactant],moleculeDict[product]) for reactant, product in reaction.pairs]
-
         return reactionList
     
-    def generateUnimolecularReactions(self, reactants, forward, template, failsSpeciesConstraints=None):
+    def generate_unimolecular_rxns(self, reactants, template, forward=True, failsSpeciesConstraints=None):
+        '''
+        Generate all possible unimolecular reactions based on the given reactants and template
+        
+        reactants: list(Species)
+        '''
         rxnList = []
+        reactant = reactants[0]
         # Iterate over all resonance isomers of the reactant
-        for molecule in reactants[0]:
-
+        for molecule in reactant.molecule:
             mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
             for map in mappings:
                 reactantStructures = [molecule]
@@ -1395,15 +1391,20 @@ class KineticsFamily(Database):
                         if rxn: rxnList.append(rxn)
         return rxnList
     
-    def generateBimolecularReactions(self, reactants, forward, template, failsSpeciesConstraints=None):
+    def generate_bimolecular_rxns(self, reactants, template, forward=True, failsSpeciesConstraints=None):
+        '''
+        Generate all possible bimolecular reactions based on the given reactants and template
+        
+        reactants: list(Species)
+        '''
         rxnList = []
         
         moleculesA = reactants[0]
         moleculesB = reactants[1]
 
         # Iterate over all resonance isomers of the reactant
-        for moleculeA in moleculesA:
-            for moleculeB in moleculesB:
+        for moleculeA in moleculesA.molecule:
+            for moleculeB in moleculesB.molecule:
 
                 # Reactants stored as A + B
                 mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[0])
@@ -1445,52 +1446,66 @@ class KineticsFamily(Database):
         return rxnList
                                         
                             
-    def filterReactions(self, rxnList, products, forward):
-        products = [product.generateResonanceIsomers() for product in products]
-        rxnList0 = rxnList[:]
-        rxnList = []
-        for reaction in rxnList0:
+    def filter_reactions(self, rxnList, products, forward=True):
+        '''
+        Iterate over the list of Reaction objects and return those reactions 
+        that have identical products to the list of product Species passed-in 
+        as an arguments. 
+        
+        Compare the list of parameter Species to the reaction's reactants if forward
+        Compare the list of parameter Species to the reaction's products if not forward
+        
+        rxnList: list(Reaction)
+        products: list(Species)
+
+        '''
+        filtered = []
+        for reaction in rxnList:
             products0 = reaction.products if forward else reaction.reactants
-                
             # Skip reactions that don't match the given products
             match = False
-
             if len(products) == len(products0) == 1:
-                for product in products[0]:
-                    if products0[0].isIsomorphic(product):
-                        match = True
-                        break
+                match = products == products0
             elif len(products) == len(products0) == 2:
-                for productA in products[0]:
-                    for productB in products[1]:
-                        if products0[0].isIsomorphic(productA) and products0[1].isIsomorphic(productB):
-                            match = True
-                            break
-                        elif products0[0].isIsomorphic(productB) and products0[1].isIsomorphic(productA):
-                            match = True
-                            break
+                if products0[0] == products[0] and products0[1] == products[1]:
+                    match = True
+                elif products0[0] == products[1] and products0[1] == products[0]:
+                    match = True
                 
             if match: 
-                rxnList.append(reaction)
+                filtered.append(reaction)
         
-        return rxnList
+        return filtered
+    
+    def calculate_degeneracy(self, reaction):
+        """
+        Calculate the reaction path degeneracy of the parameter Reaction
+        by generating all possible reactions based on the reaction family 
+        template and by counting how many reactions have been generated
+        that are identical to the parameter Reaction.
         
+        reaction: Reaction
+        """
         
-    def updateDegeneracy(self, reactants, rxnList, rxnList_clone):
-        unique_rxns = Set(rxnList_clone)
-        
-        for rxn in Set(rxnList_clone):
-            rxn.degeneracy = rxnList_clone.count(rxn)
-            
-        rxnList_orig = rxnList[:]
-        rxnList = []
-        
-        for rxn in unique_rxns:
-            rxn_orig = rxnList_orig[rxnList_clone.index(rxn)]
-            rxn_orig.degeneracy = rxn.degeneracy
-            rxnList.append(rxn_orig)
-            
-        
+        reactants, products = reaction.reactants, reaction.products
+
+                    
+        template = self.forwardTemplate
+
+        # Unimolecular reactants: A --> products
+        if len(reactants) == 1 and len(template.reactants) == 1:
+            rxnList = self.generate_unimolecular_rxns(reactants, template)
+
+        # Bimolecular reactants: A + B --> products
+        elif len(reactants) == 2 and len(template.reactants) == 2:
+           rxnList = self.generate_bimolecular_rxns(reactants, template)
+
+        # remove reactions from the reaction list that
+        # don't generate the given products
+        rxnList = self.filter_reactions(rxnList, products)
+        reaction.degeneracy = len(rxnList)
+        assert len(Set(rxnList)) == 1
+
         # For R_Recombination reactions, the degeneracy is twice what it should
         # be, so divide those by two
         # This is hardcoding of reaction families!
@@ -1498,108 +1513,14 @@ class KineticsFamily(Database):
         # what it should be, so divide those by two
         
         sameReactants = False
-        if len(reactants) == 2 and len(reactants[0]) == len(reactants[1]):
-            reactantA = reactants[0][0]
-            for reactantB in reactants[1]:
-                if reactantA.isIsomorphic(reactantB):
+        if len(reactants) == 2:
+            if reactants[0] == reactants[1]:
                     sameReactants = True
-                    break
-                
-                
+                            
         if sameReactants or self.label.lower().startswith('r_recombination'):
-            for rxn in rxnList:
-                assert(rxn.degeneracy % 2 == 0)
-                rxn.degeneracy /= 2
-        
-        return rxnList
-    
-    def identifyIdenticalReactions(self, reactants, rxnList):
-                # The reaction list may contain duplicates of the same reaction
-        # These duplicates should be combined (by increasing the degeneracy of
-        # one of the copies and removing the others)
-        
-        # convert Molecule's into Species to auto-generate resonance isomers.
-        ##first map reactions:
-        #sort reactants/products of each reaction:
-        
-
+            assert(reaction.degeneracy % 2 == 0)
+            reaction.degeneracy /= 2
             
-        rxnList_clone = self.createCloneButPopulateWithSpecies(rxnList)
-        
-        rxnList = self.updateDegeneracy(reactants, rxnList, rxnList_clone)
-                
-        return rxnList
-    
-    
-    def calculateDegeneracy(self, reaction):
-        """
-        For a `reaction` given in the direction in which the kinetics are
-        defined, compute the reaction-path degeneracy.
-        """
-        
-        reactants, products = reaction.reactants, reaction.products
-        forward=True
-        rxnList = []; speciesList = []
-
-        # Wrap each reactant in a list if not already done (this is done to 
-        # allow for passing multiple resonance structures for each molecule)
-        # This also makes a copy of the reactants list so we don't modify the
-        # original
-        reactants = [reactant if isinstance(reactant, list) else [reactant] for reactant in reactants]
-
-                    
-        template = self.forwardTemplate
-
-        # Unimolecular reactants: A --> products
-        if len(reactants) == 1 and len(template.reactants) == 1:
-            rxnList.extend(self.generateUnimolecularReactions(reactants, forward, template))
-
-
-        # Bimolecular reactants: A + B --> products
-        elif len(reactants) == 2 and len(template.reactants) == 2:
-            rxnList.extend(self.generateBimolecularReactions(reactants, forward, template))
-            
-
-                                        
-        # If products is given, remove reactions from the reaction list that
-        # don't generate the given products
-        rxnList = self.filterReactions(rxnList, products, forward)
-
-
-        rxnList = self.identifyIdenticalReactions(reactants, rxnList)
-            
-        # This reaction list has only checked for duplicates within itself, not
-        # with the global list of reactions
-        
-        logging.debug(rxnList)
-        if len(rxnList) != 1:
-            #logging.debug(reactions)
-            for reactant in reaction.reactants:
-                logging.error(reactant)
-            for product in reaction.products:
-                logging.error(product)
-            raise Exception('Unable to calculate degeneracy for reaction {0} in reaction family {1}.'.format(reaction, self.label))
-        return rxnList[0].degeneracy
-        
-    
-    def createCloneButPopulateWithSpecies(self, rxnList):
-        rxnList_clone = []
-        for rxn in rxnList:
-            rxnList_clone.append(rxn.copy())
-        
-        for rxn in rxnList_clone:
-            reactants_spc = []
-            for reactant in rxn.reactants:
-                reactant = Species(molecule=[reactant])
-                reactants_spc.append(reactant)
-            rxn.reactants = reactants_spc
-            products_spc = []
-            for product in rxn.products:
-                product = Species(molecule=[product])
-                products_spc.append(product)
-            rxn.products = products_spc
-            
-        return rxnList_clone
     
     
     def __generateReactions(self, reactants, products=None, forward=True, failsSpeciesConstraints=None):
@@ -1608,20 +1529,13 @@ class KineticsFamily(Database):
         the list of `reactants`. The number of reactants provided must match
         the number of reactants expected by the template, or this function
         will return an empty list. Each item in the list of reactants should
-        be a list of :class:`Molecule` objects, each representing a resonance
-        isomer of the species of interest.
+        be a list of :class:`Species` objects, 
         `failsSpeciesConstraints` is an optional function that accepts a :class:`Molecule`
         structure and returns `True` if it is forbidden.
         """
 
         rxnList = []
 
-        # Wrap each reactant in a list if not already done (this is done to 
-        # allow for passing multiple resonance structures for each molecule)
-        # This also makes a copy of the reactants list so we don't modify the
-        # original
-        reactants = [reactant if isinstance(reactant, list) else [reactant] for reactant in reactants]
-                    
         if forward:
             template = self.forwardTemplate
         elif self.reverseTemplate is None:
@@ -1631,35 +1545,24 @@ class KineticsFamily(Database):
 
         # Unimolecular reactants: A --> products
         if len(reactants) == 1 and len(template.reactants) == 1:
-            rxnList.extend(self.generateUnimolecularReactions(reactants, forward, template))
+            rxnList.extend(self.generate_unimolecular_rxns(reactants, template, forward))
 
 
         # Bimolecular reactants: A + B --> products
         elif len(reactants) == 2 and len(template.reactants) == 2:
-            rxnList.extend(self.generateBimolecularReactions(reactants, forward, template))
+            rxnList.extend(self.generate_bimolecular_rxns(reactants, template, forward))
             
             
-        # If products is given, remove reactions from the reaction list that
-        # don't generate the given products
-        if products is not None:
-            rxnList = self.filterReactions(rxnList, products, forward)
+
+        if products:
+            rxnList = self.filter_reactions(rxnList, products, forward)
             
-        # The reaction list may contain duplicates of the same reaction
-        # These duplicates should be combined (by increasing the degeneracy of
-        # one of the copies and removing the others)
-        
-        # convert Molecule's into Species to auto-generate resonance isomers.
-        ##first map reactions:
-        rxnList_clone = self.createCloneButPopulateWithSpecies(rxnList)
             
-                
-        rxnList_orig = rxnList[:]
-        rxnList = []
-        
-        for rxn in Set(rxnList_clone):
-            rxn_orig = rxnList_orig[rxnList_clone.index(rxn)]
-            rxn_orig.degeneracy = rxnList_clone.count(rxn)
-            rxnList.append(rxn_orig)
+        unique_rxns = Set(rxnList)
+        for rxn in unique_rxns:
+            rxn.degeneracy = rxnList.count(rxn)
+            
+        rxnList = list(unique_rxns)
             
                 
         # Determine the reactant-product pairs to use for flux analysis
@@ -1668,20 +1571,15 @@ class KineticsFamily(Database):
             
             # Restore the labeled atoms long enough to generate some metadata
             for reactant in reaction.reactants:
-                reactant.clearLabeledAtoms()
+                reactant.molecule[0].clearLabeledAtoms()
             for label, atom in reaction.labeledAtoms:
                 atom.label = label
             
             # Generate metadata about the reaction that we will need later
-            reaction.getReactionPairs(self.label)
             reaction.template = self.getReactionTemplate(reaction)
             if not forward:
-                reaction.degeneracy = self.calculateDegeneracy(reaction)
+                self.calculate_degeneracy(reaction)
 
-            # Unlabel the atoms
-            for label, atom in reaction.labeledAtoms:
-                atom.label = ''
-            
             # We're done with the labeled atoms, so delete the attribute
             del reaction.labeledAtoms
             
