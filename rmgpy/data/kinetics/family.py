@@ -38,6 +38,7 @@ import codecs
 from copy import deepcopy
 
 from sets import Set
+from collections import Counter
 
 from rmgpy.data.base import Database, Entry, LogicNode, LogicOr, ForbiddenStructures,\
                             ForbiddenStructureException, getAllCombinations
@@ -1272,47 +1273,59 @@ class KineticsFamily(Database):
             return True
         return False
 
-    def __createReaction(self, reactants, products, isForward):
+    def __createReaction(self, reactants, mapping, forward, failsSpeciesConstraints):
         """
-        Create and return a new :class:`Reaction` object containing the
-        provided `reactants` and `products` as lists of :class:`Molecule`
-        objects.
+        Create a new TemplateReaction object using the reactants Molecules and the mapping
+        by first generating all possible product Molecule objects
+        then converting reactant/product Molecule objects into Species objects
+        and then generating the corresponding reaction pairs of reactants vs products.
+        
+        reactants: list(Molecule)
         """
+        try:
+            products = self.__generateProductStructures(reactants, mapping, forward, failsSpeciesConstraints)
+                
+        except ForbiddenStructureException:
+            pass
+        else:
+            if products is not None:
+                # Return the reactions as containing Species objects, not Molecule objects
+                reactants = [Species(molecule=[mol]) for mol in reactants]
+                products = [Species(molecule=[mol]) for mol in products]
+                
+                # Make sure the products are in fact different than the reactants
+                if len(reactants) == len(products) == 1:
+                    if reactants[0] == products[0]:
+                        return None
+                elif len(reactants) == len(products) == 2:
+                    if reactants[0] == products[0] and reactants[1] == products[1]:
+                        return None
+                    elif reactants[0] == products[1] and reactants[1] == products[0]:
+                        return None
+                    
+                # Create and return template reaction object
+                reaction = TemplateReaction(
+                    reactants = reactants if forward else products,
+                    products = products if forward else reactants,
+                    degeneracy = 1,
+                    reversible = True,
+                    family = self,
+                )
+                
+                reaction.getReactionPairs(self.label)
+                
+                # Store the labeled atoms so we can recover them later
+                # (e.g. for generating reaction pairs and templates)
+                labeledAtoms = []
+                for reactant in reaction.reactants:
+                    for label, atom in reactant.molecule[0].getLabeledAtoms().items():
+                        labeledAtoms.append((label, atom))
+                reaction.labeledAtoms = labeledAtoms
+                
+                return reaction
         
-        # Return the reactions as containing Species objects, not Molecule objects
-        reactants = [Species(molecule=[mol]) for mol in reactants]
-        products = [Species(molecule=[mol]) for mol in products]
-
-        # Make sure the products are in fact different than the reactants
-        if len(reactants) == len(products) == 1:
-            if reactants[0] == products[0]:
-                return None
-        elif len(reactants) == len(products) == 2:
-            if reactants[0] == products[0] and reactants[1] == products[1]:
-                return None
-            elif reactants[0] == products[1] and reactants[1] == products[0]:
-                return None
-
-        # Create and return template reaction object
-        reaction = TemplateReaction(
-            reactants = reactants if isForward else products,
-            products = products if isForward else reactants,
-            degeneracy = 1,
-            reversible = True,
-            family = self,
-        )
-        
-        reaction.getReactionPairs(self.label)
-        
-        # Store the labeled atoms so we can recover them later
-        # (e.g. for generating reaction pairs and templates)
-        labeledAtoms = []
-        for reactant in reaction.reactants:
-            for label, atom in reactant.molecule[0].getLabeledAtoms().items():
-                labeledAtoms.append((label, atom))
-        reaction.labeledAtoms = labeledAtoms
-        
-        return reaction
+        return None
+    
 
     def __matchReactantToTemplate(self, reactant, templateReactant):
         """
@@ -1381,14 +1394,8 @@ class KineticsFamily(Database):
             mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
             for map in mappings:
                 reactantStructures = [molecule]
-                try:
-                    productStructures = self.__generateProductStructures(reactantStructures, [map], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                except ForbiddenStructureException:
-                    pass
-                else:
-                    if productStructures is not None:
-                        rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                        if rxn: rxnList.append(rxn)
+                rxn = self.__createReaction(reactantStructures, [map], forward, failsSpeciesConstraints=failsSpeciesConstraints)
+                if rxn: rxnList.append(rxn)
         return rxnList
     
     def generate_bimolecular_rxns(self, reactants, template, forward=True, failsSpeciesConstraints=None):
@@ -1414,18 +1421,11 @@ class KineticsFamily(Database):
                 for mapA in mappingsA:
                     for mapB in mappingsB:
                         reactantStructures = [moleculeA, moleculeB]
-                        try:
-                            productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                        except ForbiddenStructureException:
-                            pass
-                        else:
-                            if productStructures is not None:
-                                rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                if rxn: rxnList.append(rxn)
+                        rxn = self.__createReaction(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
+                        if rxn: rxnList.append(rxn)
 
                 # Only check for swapped reactants if they are different
                 if reactants[0] is not reactants[1]:
-
                     # Reactants stored as B + A
                     mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[1])
                     mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[0])
@@ -1434,14 +1434,8 @@ class KineticsFamily(Database):
                     for mapA in mappingsA:
                         for mapB in mappingsB:
                             reactantStructures = [moleculeA, moleculeB]
-                            try:
-                                productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
-                            except ForbiddenStructureException:
-                                pass
-                            else:
-                                if productStructures is not None:
-                                    rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                    if rxn: rxnList.append(rxn)
+                            rxn = self.__createReaction(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
+                            if rxn: rxnList.append(rxn)
                                         
         return rxnList
                                         
@@ -1535,7 +1529,7 @@ class KineticsFamily(Database):
         """
 
         rxnList = []
-
+        
         if forward:
             template = self.forwardTemplate
         elif self.reverseTemplate is None:
@@ -1545,27 +1539,22 @@ class KineticsFamily(Database):
 
         # Unimolecular reactants: A --> products
         if len(reactants) == 1 and len(template.reactants) == 1:
-            rxnList.extend(self.generate_unimolecular_rxns(reactants, template, forward))
-
+            rxnList = self.generate_unimolecular_rxns(reactants, template, forward)
 
         # Bimolecular reactants: A + B --> products
         elif len(reactants) == 2 and len(template.reactants) == 2:
-            rxnList.extend(self.generate_bimolecular_rxns(reactants, template, forward))
-            
-            
+            rxnList = self.generate_bimolecular_rxns(reactants, template, forward)
 
         if products:
             rxnList = self.filter_reactions(rxnList, products, forward)
             
+        
+        c = Counter(rxnList)
+        for rxn, deg in c.iteritems():
+            rxn.degeneracy = deg
             
-        unique_rxns = Set(rxnList)
-        for rxn in unique_rxns:
-            rxn.degeneracy = rxnList.count(rxn)
-            
-        rxnList = list(unique_rxns)
-            
-                
-        # Determine the reactant-product pairs to use for flux analysis
+        rxnList = c.keys()
+
         # Also store the reaction template (useful so we can easily get the kinetics later)
         for reaction in rxnList:
             
@@ -1586,7 +1575,7 @@ class KineticsFamily(Database):
         # This reaction list has only checked for duplicates within itself, not
         # with the global list of reactions
         
-        return rxnList
+        return list(rxnList)
         
     def getReactionTemplate(self, reaction):
         """
