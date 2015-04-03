@@ -1381,7 +1381,7 @@ class KineticsFamily(Database):
             
         return reactionList
     
-    def generate_unimolecular_rxns(self, reactants, template, forward=True, failsSpeciesConstraints=None):
+    def generate_unimolecular_rxns(self, reactants, template, products=None, forward=True, failsSpeciesConstraints=None):
         '''
         Generate all possible unimolecular reactions based on the given reactants and template
         
@@ -1396,9 +1396,13 @@ class KineticsFamily(Database):
                 reactantStructures = [molecule]
                 rxn = self.__createReaction(reactantStructures, [map], forward, failsSpeciesConstraints=failsSpeciesConstraints)
                 if rxn: rxnList.append(rxn)
+        
+        if products:
+            rxnList = self.filter_reactions(rxnList, products, forward)
+            
         return rxnList
     
-    def generate_bimolecular_rxns(self, reactants, template, forward=True, failsSpeciesConstraints=None):
+    def generate_bimolecular_rxns(self, reactants, template, products=None, forward=True, failsSpeciesConstraints=None):
         '''
         Generate all possible bimolecular reactions based on the given reactants and template
         
@@ -1437,6 +1441,10 @@ class KineticsFamily(Database):
                             rxn = self.__createReaction(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
                             if rxn: rxnList.append(rxn)
                                         
+        
+        if products:
+            rxnList = self.filter_reactions(rxnList, products, forward)
+            
         return rxnList
                                         
                             
@@ -1556,14 +1564,11 @@ class KineticsFamily(Database):
 
         # Unimolecular reactants: A --> products
         if len(reactants) == 1 and len(template.reactants) == 1:
-            rxnList = self.generate_unimolecular_rxns(reactants, template, forward)
+            rxnList = self.generate_unimolecular_rxns(reactants, template, products, forward)
 
         # Bimolecular reactants: A + B --> products
         elif len(reactants) == 2 and len(template.reactants) == 2:
-            rxnList = self.generate_bimolecular_rxns(reactants, template, forward)
-
-        if products:
-            rxnList = self.filter_reactions(rxnList, products, forward)
+            rxnList = self.generate_bimolecular_rxns(reactants, template, products, forward)
             
         
         c = Counter(rxnList)
