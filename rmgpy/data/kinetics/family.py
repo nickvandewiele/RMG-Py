@@ -1451,6 +1451,8 @@ class KineticsFamily(Database):
         
         rxnList: list(Reaction)
         products: list(Species)
+        
+        return: list(Reaction)
 
         '''
         filtered = []
@@ -1485,20 +1487,35 @@ class KineticsFamily(Database):
 
                     
         template = self.forwardTemplate
-
+        rxnList = []
         # Unimolecular reactants: A --> products
         if len(reactants) == 1 and len(template.reactants) == 1:
-            rxnList = self.generate_unimolecular_rxns(reactants, template)
+            rxnList.extend(self.generate_unimolecular_rxns(reactants, template, products))
 
         # Bimolecular reactants: A + B --> products
         elif len(reactants) == 2 and len(template.reactants) == 2:
-           rxnList = self.generate_bimolecular_rxns(reactants, template)
+           rxnList.extend(self.generate_bimolecular_rxns(reactants, template, products))
 
-        # remove reactions from the reaction list that
-        # don't generate the given products
-        rxnList = self.filter_reactions(rxnList, products)
-        reaction.degeneracy = len(rxnList)
-        assert len(Set(rxnList)) == 1
+        '''
+        2 scenarios might occur:
+        1) the parameter reaction can be generated through the reaction template
+        2) the parameter reaction cannot be generated through the reaction template
+        
+        In scenario 1, the produced list of reactions should consist of only
+        1 unique reaction, i.e. the parameter reaction. The degeneracy is equal
+        to the number of elements in the list.
+        
+        In scenario 2, the list is empty. The degeneracy is set to 1.
+        
+         
+        '''
+        if rxnList:
+            assert len(Set(rxnList)) == 1
+            reaction.degeneracy = len(rxnList)
+        else:
+            reaction.degeneracy = 1
+        
+        
 
         # For R_Recombination reactions, the degeneracy is twice what it should
         # be, so divide those by two
@@ -1512,7 +1529,7 @@ class KineticsFamily(Database):
                     sameReactants = True
                             
         if sameReactants or self.label.lower().startswith('r_recombination'):
-            assert(reaction.degeneracy % 2 == 0)
+            assert reaction.degeneracy % 2 == 0
             reaction.degeneracy /= 2
             
     
