@@ -1593,8 +1593,6 @@ class KineticsFamily(Database):
             if not forward:
                 self.calculate_degeneracy(reaction)
 
-            # We're done with the labeled atoms, so delete the attribute
-            del reaction.labeledAtoms
             
         # This reaction list has only checked for duplicates within itself, not
         # with the global list of reactions
