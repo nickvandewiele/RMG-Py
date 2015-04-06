@@ -1391,9 +1391,10 @@ class KineticsFamily(Database):
         reactant = reactants[0]
         # Iterate over all resonance isomers of the reactant
         for molecule in reactant.molecule:
+            molecule = molecule.copy(deep=True)
             mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
+            reactantStructures = [molecule]
             for map in mappings:
-                reactantStructures = [molecule]
                 rxn = self.__createReaction(reactantStructures, [map], forward, failsSpeciesConstraints=failsSpeciesConstraints)
                 if rxn: rxnList.append(rxn)
         
@@ -1416,7 +1417,10 @@ class KineticsFamily(Database):
         # Iterate over all resonance isomers of the reactant
         for moleculeA in moleculesA.molecule:
             for moleculeB in moleculesB.molecule:
-
+                moleculeA = moleculeA.copy(deep=True)
+                moleculeB = moleculeB.copy(deep=True)
+                reactantStructures = [moleculeA, moleculeB]
+                
                 # Reactants stored as A + B
                 mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[0])
                 mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[1])
@@ -1424,7 +1428,6 @@ class KineticsFamily(Database):
                 # Iterate over each pair of matches (A, B)
                 for mapA in mappingsA:
                     for mapB in mappingsB:
-                        reactantStructures = [moleculeA, moleculeB]
                         rxn = self.__createReaction(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
                         if rxn: rxnList.append(rxn)
 
@@ -1437,7 +1440,6 @@ class KineticsFamily(Database):
                     # Iterate over each pair of matches (A, B)
                     for mapA in mappingsA:
                         for mapB in mappingsB:
-                            reactantStructures = [moleculeA, moleculeB]
                             rxn = self.__createReaction(reactantStructures, [mapA, mapB], forward, failsSpeciesConstraints=failsSpeciesConstraints)
                             if rxn: rxnList.append(rxn)
                                         
