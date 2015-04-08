@@ -1290,8 +1290,8 @@ class KineticsFamily(Database):
         else:
             if products is not None:
                 # Return the reactions as containing Species objects, not Molecule objects
-                reactants = [Species(molecule=[mol]) for mol in reactants]
-                products = [Species(molecule=[mol]) for mol in products]
+                reactants = [Species(molecule=[mol.copy(deep=True)]) for mol in reactants]
+                products = [Species(molecule=[mol.copy(deep=True)]) for mol in products]
                 
                 # Make sure the products are in fact different than the reactants
                 if len(reactants) == len(products) == 1:
