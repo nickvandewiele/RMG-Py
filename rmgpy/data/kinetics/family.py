@@ -1316,12 +1316,13 @@ class KineticsFamily(Database):
                 
                 # Store the labeled atoms so we can recover them later
                 # (e.g. for generating reaction pairs and templates)
-                labeledAtoms = []
-                for reactant in reaction.reactants:
+                labeledAtoms = {}
+                for i, reactant in enumerate(reaction.reactants):
+                    dict_i = {}
                     for label, atom in reactant.molecule[0].getLabeledAtoms().items():
-                        labeledAtoms.append((label, atom))
+                        dict_i[reactant.molecule[0].atoms.index(atom)] = label
+                    labeledAtoms[i] = dict_i
                 reaction.labeledAtoms = labeledAtoms
-                
                 return reaction
         
         return None
@@ -1582,12 +1583,6 @@ class KineticsFamily(Database):
         # Also store the reaction template (useful so we can easily get the kinetics later)
         for reaction in rxnList:
             
-            # Restore the labeled atoms long enough to generate some metadata
-            for reactant in reaction.reactants:
-                reactant.molecule[0].clearLabeledAtoms()
-            for label, atom in reaction.labeledAtoms:
-                atom.label = label
-            
             # Generate metadata about the reaction that we will need later
             reaction.template = self.getReactionTemplate(reaction)
             if not forward:
@@ -1605,6 +1600,24 @@ class KineticsFamily(Database):
         as the reactants, determine the most specific nodes in the tree that
         describe the reaction.
         """
+        try:
+            foo = reaction.labeledAtoms
+            #clear previous labels, if there were any:
+            for reactant in reaction.reactants:
+                for molecule in reactant.molecule:
+                    molecule.clearLabeledAtoms()
+                    
+            #transfer reaction atom labels to reactants:
+            for i, labels in reaction.labeledAtoms.iteritems():
+                #assumes molecule[0] is used
+                molecule = reaction.reactants[i].molecule[0]
+                for atom_index, label in labels.iteritems():
+                    molecule.atoms[atom_index].label = label
+        
+        except AttributeError:
+            pass
+
+                
         return self.groups.getReactionTemplate(reaction)
 
     def getKineticsForTemplate(self, template, degeneracy=1, method='rate rules'):
