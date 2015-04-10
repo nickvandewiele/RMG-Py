@@ -1283,6 +1283,9 @@ class KineticsFamily(Database):
                 reactants = [Species(molecule=[mol.copy(deep=True)]) for mol in reactants]
                 products = [Species(molecule=[mol.copy(deep=True)]) for mol in products]
                 
+                reactants.sort(key=lambda spc: spc.label)
+                products.sort(key=lambda spc: spc.label)
+                
                 # Make sure the products are in fact different than the reactants
                 if len(reactants) == len(products) == 1:
                     if reactants[0] == products[0]:

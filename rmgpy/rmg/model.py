@@ -481,9 +481,6 @@ class CoreEdgeReactionModel:
         reaction (if found).
         """
 
-        # Make sure the reactant and product lists are sorted before performing the check
-        rxn.reactants.sort(key=lambda spc: spc.label)
-        rxn.products.sort(key=lambda spc: spc.label)
 
         # Get the short-list of reactions with the same family, reactant1 and reactant2
         r1 = rxn.reactants[0]
@@ -1496,8 +1493,7 @@ class CoreEdgeReactionModel:
         else:
             reactants = newReaction.products[:]
             products = newReaction.products[:]
-        reactants.sort(key=lambda spc: spc.label)
-        products.sort(key=lambda spc: spc.label)
+
         
         source = tuple(reactants)
 
