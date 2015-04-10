@@ -1188,11 +1188,6 @@ class KineticsFamily(Database):
             # reaction templates
             return None
 
-        # If there are two product structures, place the one containing '*1' first
-        if len(productStructures) == 2:
-            if not productStructures[0].containsLabeledAtom('*1') and \
-                productStructures[1].containsLabeledAtom('*1'):
-                productStructures.reverse()
 
         # If product structures are Molecule objects, update their atom types
         for struct in productStructures:
@@ -1245,11 +1240,6 @@ class KineticsFamily(Database):
             # If unable to apply the reaction recipe, then return no product structures
             return None
 
-        # If there are two product structures, place the one containing '*1' first
-        if len(productStructures) == 2:
-            if not productStructures[0].containsLabeledAtom('*1') and \
-                productStructures[1].containsLabeledAtom('*1'):
-                productStructures.reverse()
 
         # Apply the generated species constraints (if given)
         for struct in productStructures:
