@@ -421,7 +421,8 @@ class RMG:
             self.reactionModel.enlarge([spec for spec in self.initialSpecies if not spec.reactive])
             # Then add remaining reactive species
             for spec in self.initialSpecies:
-                spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
+                thermo_spc = spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
+                self.reactionModel.thermoDict[spc.label] = thermo_spc
                 spec.generateTransportData(self.database)
 
             self.reactionModel.enlarge([spec for spec in self.initialSpecies if spec.reactive])
