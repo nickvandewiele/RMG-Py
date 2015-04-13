@@ -364,6 +364,7 @@ class CoreEdgeReactionModel:
     `networkDict`              A dictionary of pressure-dependent reaction networks (:class:`Network` objects) indexed by source.
     `networkList`              A list of pressure-dependent reaction networks (:class:`Network` objects)
     `networkCount`             A counter for the number of pressure-dependent networks created
+    thermoDict                 A dictionary with the species identifiers as keys and the corresponding thermo as a values
     =========================  ==============================================================
 
 
@@ -386,6 +387,7 @@ class CoreEdgeReactionModel:
         self.networkCount = 0
         self.speciesDict = {}
         self.reactionDict = {}
+        self.thermoDict = {}
         self.speciesCache = [None for i in range(4)]
         self.speciesCounter = 0
         self.reactionCounter = 0
@@ -764,7 +766,8 @@ class CoreEdgeReactionModel:
         # Generate thermodynamics of new species
         logging.info('Generating thermodynamics for new species...')
         for spec in newSpeciesSet:
-            spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            self.thermoDict[spc.label] = thermo_spc
             spec.generateTransportData(database)
         
         # Generate kinetics of new reactions
@@ -1359,7 +1362,8 @@ class CoreEdgeReactionModel:
                     raise ForbiddenStructureException("Species constraints forbids species {0} from seed mechanism {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, seedMechanism.label))
 
         for spec in self.newSpeciesSet:            
-            if spec.reactive: spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            self.thermoDict[spc.label] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToCore(spec)
 
@@ -1370,7 +1374,8 @@ class CoreEdgeReactionModel:
                 # ...but are Seed Mechanisms run through PDep? Perhaps not.
                 for spec in itertools.chain(rxn.reactants, rxn.products):
                     if spec.thermo is None:
-                        spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+                        thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+                        self.thermoDict[spc.label] = thermo_spc
                 rxn.fixBarrierHeight(forcePositive=True)
             self.addReactionToCore(rxn)
         
@@ -1422,7 +1427,8 @@ class CoreEdgeReactionModel:
                     raise ForbiddenStructureException("Species constraints forbids species {0} from reaction library {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, reactionLibrary.label))
        
         for spec in self.newSpeciesSet:
-            if spec.reactive: spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+            self.thermoDict[spc.label] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToEdge(spec)
 

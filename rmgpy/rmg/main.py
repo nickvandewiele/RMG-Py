@@ -417,7 +417,8 @@ class RMG:
                         raise ForbiddenStructureException("Species constraints forbids input species {0}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label))
 
             for spec in self.initialSpecies:
-                spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
+                thermo_spc = spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
+                self.reactionModel.thermoDict[spc.label] = thermo_spc
                 spec.generateTransportData(self.database)
                 
             # Add nonreactive species (e.g. bath gases) to core first
