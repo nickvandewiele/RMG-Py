@@ -387,45 +387,58 @@ class CoreEdgeReactionModel:
         either a :class:`Molecule` object or an :class:`rmgpy.species.Species`
         object.
         """
+        
+        database = rmgpy.data.rmg.database
+        
         if isinstance(object, rmgpy.species.Species):
             molecule = object.molecule[0]
             label = label if label != '' else object.label
             reactive = object.reactive
         else:
             molecule = object
-            
+        
         molecule.clearLabeledAtoms()
 
+        spec = Species(label=label, molecule=[molecule], reactive=reactive)
+        logging.debug('Creating new species {0}'.format(spec.label))
+        
+        
         # If desired, check to ensure that the species is new; return the
         # existing species if not new
+        isNew = True
         if checkForExisting:
-            found, spec = self.checkForExistingSpecies(molecule)
-            if found: return spec, False
-
-        # Check that the structure is not forbidden
-
-        # If we're here then we're ready to make the new species
-        if reactive:
-            self.speciesCounter += 1   # count only reactive species
-            speciesIndex = self.speciesCounter
-        else:
-            speciesIndex = -1
-        spec = Species(index=speciesIndex, label=label, molecule=[molecule], reactive=reactive)
-        logging.debug('Creating new species {0}'.format(spec.label))
-        spec.coreSizeAtCreation = len(self.core.species)
+            found, existing_spc = self.checkForExistingSpecies(molecule)
+            isNew = not found
+            if found:
+                spec.index = existing_spc.index
+                spec.coreSizeAtCreation = existing_spc.coreSizeAtCreation
+                #we assume that existing species will have their thermo stored in self.thermoDict
+                spec.thermo = self.thermoDict[existing_spc.label] 
+            else:
+                if reactive:
+                    self.speciesCounter += 1   # count only reactive species
+                    speciesIndex = self.speciesCounter
+                else:
+                    speciesIndex = -1                
+                
+                spec.index = speciesIndex
+                spec.coreSizeAtCreation = len(self.core.species)
+                if database:#only generate thermo if database is loaded
+                    thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
+                    self.thermoDict[spec.label] = thermo_spc
+                
+                formula = spec.formula
+                if formula in self.speciesDict:
+                    self.speciesDict[formula].append(spec)
+                else:
+                    self.speciesDict[formula] = [spec]
         
 
-        formula = spec.formula
-        if formula in self.speciesDict:
-            self.speciesDict[formula].append(spec)
-        else:
-            self.speciesDict[formula] = [spec]
-        
+                # Since the species is new, add it to the list of new species
+                self.newSpeciesSet.add(spec)
+            
 
-        # Since the species is new, add it to the list of new species
-        self.newSpeciesSet.add(spec)
-
-        return spec, True
+        return spec, isNew
 
     def checkForExistingReaction(self, rxn):
         """
@@ -717,8 +730,6 @@ class CoreEdgeReactionModel:
         # Generate thermodynamics of new species
         logging.info('Generating thermodynamics for new species...')
         for spec in newSpeciesSet:
-            thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.label] = thermo_spc
             spec.generateTransportData(database)
         
         # Generate kinetics of new reactions
