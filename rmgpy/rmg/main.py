@@ -418,7 +418,7 @@ class RMG:
 
             for spec in self.initialSpecies:
                 thermo_spc = spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
-                self.reactionModel.thermoDict[spec.label] = thermo_spc
+                self.reactionModel.thermoDict[spec.getInChI()] = thermo_spc
                 spec.generateTransportData(self.database)
                 
             # Add nonreactive species (e.g. bath gases) to core first
