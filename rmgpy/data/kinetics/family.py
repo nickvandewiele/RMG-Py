@@ -53,6 +53,7 @@ from .depository import KineticsDepository
 from .groups import KineticsGroups
 from .rules import KineticsRules
 
+import itertools
 ################################################################################
 
 class InvalidActionError(Exception):
@@ -972,7 +973,7 @@ class KineticsFamily(Database):
         reverse_entries = []
         for entry in entries:
             try:        
-                template = self.getReactionTemplate(entry.item)
+                template = self.groups.getReactionTemplate(entry.item)
             except UndeterminableKineticsError:
                 # Some entries might be stored in the reverse direction for
                 # this family; save them so we can try this
@@ -1029,7 +1030,7 @@ class KineticsFamily(Database):
             data = item.generateReverseRateCoefficient()
             
             item = Reaction(reactants=[m.copy() for m in entry.item.products], products=[m.copy() for m in entry.item.reactants])
-            template = self.getReactionTemplate(item)
+            template = self.groups.getReactionTemplate(item)
             self.calculate_degeneracy(item)
             
             new_entry = Entry(
@@ -1316,6 +1317,12 @@ class KineticsFamily(Database):
                         dict_i[reactant.molecule[0].atoms.index(atom)] = label
                     labeledAtoms[i] = dict_i
                 reaction.labeledAtoms = labeledAtoms
+                
+                # Clear atom labeling from all reactant/product structures
+                for struct in itertools.chain(reactants, products):
+                    for mol in struct.molecule: 
+                        mol.clearLabeledAtoms()
+        
                 return reaction
         
         return None
@@ -1593,26 +1600,29 @@ class KineticsFamily(Database):
         as the reactants, determine the most specific nodes in the tree that
         describe the reaction.
         """
-        try:
-            foo = reaction.labeledAtoms
-            #clear previous labels, if there were any:
-            for reactant in reaction.reactants:
-                for molecule in reactant.molecule:
-                    molecule.clearLabeledAtoms()
-                    
-            #transfer reaction atom labels to reactants:
-            for i, labels in reaction.labeledAtoms.iteritems():
-                #assumes molecule[0] is used
-                molecule = reaction.reactants[i].molecule[0]
-                for atom_index, label in labels.iteritems():
-                    molecule.atoms[atom_index].label = label
-        
-        except AttributeError:
-            pass
-
+        #clear previous labels, if there were any:
+        for reactant in reaction.reactants:
+            for molecule in reactant.molecule:
+                molecule.clearLabeledAtoms()
                 
-        return self.groups.getReactionTemplate(reaction)
+        #transfer reaction atom labels to reactants:
+        for i, labels in reaction.labeledAtoms.iteritems():
+            #assumes molecule[0] is used
+            molecule = reaction.reactants[i].molecule[0]
+            for atom_index, label in labels.iteritems():
+                molecule.atoms[atom_index].label = label
 
+        template = self.groups.getReactionTemplate(reaction)
+
+        #clear labels, as soon as we have the node match. 
+        for struct in itertools.chain(reaction.reactants, reaction.products):
+                for mol in struct.molecule: 
+                    mol.clearLabeledAtoms()
+    
+    
+        return template
+    
+     
     def getKineticsForTemplate(self, template, degeneracy=1, method='rate rules'):
         """
         Return an estimate of the kinetics for a reaction with the given
