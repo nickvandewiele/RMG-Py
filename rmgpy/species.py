@@ -167,6 +167,10 @@ class Species(object):
     def getInChI(self):
         return self.molecule[0].toInChI() if self.molecule else ''
     
+    def getAugmentedInChI(self):
+        return self.molecule[0].toAugmentedInChI() if self.molecule else ''
+    
+    
     def __generate_label(self):
         """
         Private method that generates a string and stores it in the attribute label.
