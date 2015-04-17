@@ -449,7 +449,6 @@ class CoreEdgeReactionModel:
         molecule.clearLabeledAtoms()
 
         spec = Species(label=label, molecule=[molecule], reactive=reactive)
-        logging.debug('Creating new species {0}'.format(spec.label))
         
         
         # If desired, check to ensure that the species is new; return the
@@ -466,6 +465,7 @@ class CoreEdgeReactionModel:
                 #we assume that existing species will have their thermo stored in self.thermoDict
                 spec.thermo = self.thermoDict[existing_spc.getAugmentedInChI()] 
             else:
+                logging.debug('Creating new species {0}'.format(spec.label))
                 if reactive:
                     self.speciesCounter += 1   # count only reactive species
                     speciesIndex = self.speciesCounter
