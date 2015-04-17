@@ -464,7 +464,7 @@ class CoreEdgeReactionModel:
                 spec.reactive = existing_spc.reactive
                 spec.coreSizeAtCreation = existing_spc.coreSizeAtCreation
                 #we assume that existing species will have their thermo stored in self.thermoDict
-                spec.thermo = self.thermoDict[existing_spc.getInChI()] 
+                spec.thermo = self.thermoDict[existing_spc.getAugmentedInChI()] 
             else:
                 if reactive:
                     self.speciesCounter += 1   # count only reactive species
@@ -476,7 +476,7 @@ class CoreEdgeReactionModel:
                 spec.coreSizeAtCreation = len(self.core.species)
                 if database:#only generate thermo if database is loaded
                     thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                    self.thermoDict[spec.getInChI()] = thermo_spc
+                    self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
                 
                 formula = spec.formula
                 if formula in self.speciesDict:
@@ -1376,7 +1376,7 @@ class CoreEdgeReactionModel:
 
         for spec in self.newSpeciesSet:            
             if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.getInChI()] = thermo_spc
+            self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToCore(spec)
 
@@ -1386,11 +1386,11 @@ class CoreEdgeReactionModel:
                 # we need to make sure the barrier is positive.
                 # ...but are Seed Mechanisms run through PDep? Perhaps not.
                 for spec in itertools.chain(rxn.reactants, rxn.products):
-                    if spec.getInChI() in self.thermoDict:
-                        spec.thermo = self.thermoDict[spec.getInChI()]
+                    if spec.getAugmentedInChI() in self.thermoDict:
+                        spec.thermo = self.thermoDict[spec.getAugmentedInChI()]
                     else:
                         thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                        self.thermoDict[spec.getInChI()] = thermo_spc
+                        self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
                 rxn.fixBarrierHeight(forcePositive=True)
             self.addReactionToCore(rxn)
         
@@ -1443,7 +1443,7 @@ class CoreEdgeReactionModel:
        
         for spec in self.newSpeciesSet:
             if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.getInChI()] = thermo_spc
+            self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToEdge(spec)
 

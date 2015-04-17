@@ -418,9 +418,11 @@ class RMG:
 
             for spec in self.initialSpecies:
                 thermo_spc = spec.generateThermoData(self.database, quantumMechanics=self.quantumMechanics)
-                self.reactionModel.thermoDict[spec.getInChI()] = thermo_spc
+                self.reactionModel.thermoDict[spec.getAugmentedInChI()] = thermo_spc
                 spec.generateTransportData(self.database)
-                
+            
+            print 'thermoDict: ', self.reactionModel.thermoDict
+            
             # Add nonreactive species (e.g. bath gases) to core first
             # This is necessary so that the PDep algorithm can identify the bath gas            
             for spec in self.initialSpecies:
