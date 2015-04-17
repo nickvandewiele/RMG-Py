@@ -208,7 +208,7 @@ class Species(rmgpy.species.Species):
                     for i in range(len(thermo)): 
                         logging.info("Resonance isomer {0} {1} gives H298={2:.0f} J/mol".format(i+1, thermo[i][2].toSMILES(), thermo[i][1]))
                     # Save resonance isomers reordered by their thermo
-                    self.molecule = [item[2] for item in thermo]
+                    #self.molecule = [item[2] for item in thermo]
                 thermo0 = thermo[0][3] 
             else:
                 # Saturated molecule, does not need HBI method
