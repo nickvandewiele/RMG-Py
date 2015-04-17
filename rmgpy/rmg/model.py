@@ -791,6 +791,7 @@ class CoreEdgeReactionModel:
                 if reaction.family.ownReverse and hasattr(reaction,'reverse'):
                     if not isForward:
                         reaction.template = reaction.reverse.template
+                        reaction.labeledAtoms = reaction.reverse.labeledAtoms
                     # We're done with the "reverse" attribute, so delete it to save a bit of memory
                     delattr(reaction,'reverse')
                     
@@ -922,6 +923,10 @@ class CoreEdgeReactionModel:
         assert isinstance(reaction, TemplateReaction)
         
         # Get the kinetics for the reaction
+        
+        # Generate metadata about the reaction that we will need later
+        reaction.template = reaction.family.getReactionTemplate(reaction)
+        
         kinetics, source, entry, isForward = reaction.family.getKinetics(reaction, template=reaction.template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
         # Get the enthalpy of reaction at 298 K
         H298 = reaction.getEnthalpyOfReaction(298)
@@ -930,6 +935,9 @@ class CoreEdgeReactionModel:
         if reaction.family.ownReverse and hasattr(reaction,'reverse'):
             
             # The kinetics family is its own reverse, so we could estimate kinetics in either direction
+            
+            # Generate metadata about the reaction that we will need later
+            reaction.reverse.template = reaction.reverse.family.getReactionTemplate(reaction.reverse)
             
             # First get the kinetics for the other direction
             rev_kinetics, rev_source, rev_entry, rev_isForward = reaction.family.getKinetics(reaction.reverse, template=reaction.reverse.template, degeneracy=reaction.reverse.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)

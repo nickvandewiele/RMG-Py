@@ -1582,9 +1582,6 @@ class KineticsFamily(Database):
 
         # Also store the reaction template (useful so we can easily get the kinetics later)
         for reaction in rxnList:
-            
-            # Generate metadata about the reaction that we will need later
-            reaction.template = self.getReactionTemplate(reaction)
             if not forward:
                 self.calculate_degeneracy(reaction)
 

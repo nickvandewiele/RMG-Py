@@ -803,7 +803,6 @@ class ThermoDatabase(object):
         H298 = numpy.array([t.getEnthalpy(298.) for t in thermo])
         indices = H298.argsort()
         
-        species.molecule = [species.molecule[ind] for ind in indices]
         
         thermoData = thermo[indices[0]]
         self.findCp0andCpInf(species, thermoData)
