@@ -417,16 +417,12 @@ class CoreEdgeReactionModel:
                         return True, spec
 
         # Return an existing species if a match is found
-        formula = molecule.getFormula()
-        try:
-             speciesList = self.speciesDict[formula]
-        except KeyError:
-            return False, None
-        for spec in speciesList:
-            if spec.compare(molecule):
-                self.speciesCache.pop()
-                self.speciesCache.insert(0, spec)
-                return True, spec
+        aug_inchi = molecule.toAugmentedInChI()
+        if aug_inchi in self.speciesDict:
+            spec = self.speciesDict[aug_inchi]
+            self.speciesCache.pop()
+            self.speciesCache.insert(0, spec)
+            return True, spec
         # At this point we can conclude that the structure does not exist
         return False, None
 
@@ -478,12 +474,8 @@ class CoreEdgeReactionModel:
                     thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
                     self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
                 
-                formula = spec.formula
-                if formula in self.speciesDict:
-                    self.speciesDict[formula].append(spec)
-                else:
-                    self.speciesDict[formula] = [spec]
-        
+                aug_inchi = spec.getAugmentedInChI()
+                self.speciesDict[aug_inchi] = spec
 
                 # Since the species is new, add it to the list of new species
                 self.newSpeciesSet.add(spec)
@@ -1251,8 +1243,7 @@ class CoreEdgeReactionModel:
                         self.reactionDict[family][reactant1][reactant2].remove(tempRxnToBeDeleted)
 
         # remove from the global list of species, to free memory
-        formula = spec.molecule[0].getFormula()
-        self.speciesDict[formula].remove(spec)
+        del self.speciesDict[spec.getAugmentedInChI()]
         if spec in self.speciesCache:
             self.speciesCache.remove(spec)
             self.speciesCache.append(None)
