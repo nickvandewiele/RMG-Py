@@ -796,7 +796,6 @@ class CoreEdgeReactionModel:
                     reaction.pairs = [(p,r) for r,p in reaction.pairs]
                 if family.ownReverse and hasattr(reaction,'reverse'):
                     if not isForward:
-                        reaction.template = reaction.reverse.template
                         reaction.labeledAtoms = reaction.reverse.labeledAtoms
                     # We're done with the "reverse" attribute, so delete it to save a bit of memory
                     delattr(reaction,'reverse')
@@ -933,9 +932,9 @@ class CoreEdgeReactionModel:
         
         # Generate metadata about the reaction that we will need later
         family = database.kinetics.families[reaction.family]
-        reaction.template = family.getReactionTemplate(reaction)
+        template = family.getReactionTemplate(reaction)
         
-        kinetics, source, entry, isForward = family.getKinetics(reaction, template=reaction.template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
+        kinetics, source, entry, isForward = family.getKinetics(reaction, template=template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
         # Get the enthalpy of reaction at 298 K
         H298 = reaction.getEnthalpyOfReaction(298)
         G298 = reaction.getFreeEnergyOfReaction(298)
@@ -946,10 +945,10 @@ class CoreEdgeReactionModel:
             
             # Generate metadata about the reaction that we will need later
             family = database.kinetics.families[reaction.reverse.family]
-            reaction.reverse.template = family.getReactionTemplate(reaction.reverse)
+            template = family.getReactionTemplate(reaction.reverse)
             
             # First get the kinetics for the other direction
-            rev_kinetics, rev_source, rev_entry, rev_isForward = family.getKinetics(reaction.reverse, template=reaction.reverse.template, degeneracy=reaction.reverse.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
+            rev_kinetics, rev_source, rev_entry, rev_isForward = family.getKinetics(reaction.reverse, template=template, degeneracy=reaction.reverse.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
             # Now decide which direction's kinetics to keep
             keepReverse = False
             if (entry is not None and rev_entry is None):

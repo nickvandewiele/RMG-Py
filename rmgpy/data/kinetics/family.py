@@ -93,7 +93,6 @@ class TemplateReaction(Reaction):
                 degeneracy=1,
                 pairs=None,
                 family=None,
-                template=None,
                 estimator=None,
                 ):
         Reaction.__init__(self,
@@ -108,7 +107,6 @@ class TemplateReaction(Reaction):
                           pairs=pairs
                           )
         self.family = family
-        self.template = template
         self.estimator = estimator
 
     def __reduce__(self):
@@ -125,7 +123,6 @@ class TemplateReaction(Reaction):
                                    self.degeneracy,
                                    self.pairs,
                                    self.family,
-                                   self.template,
                                    self.estimator
                                    ))
 
@@ -160,7 +157,6 @@ class TemplateReaction(Reaction):
         other.family = deepcopy(self.family)
         '''
         
-        other.template = deepcopy(self.template)
         other.estimator = deepcopy(self.estimator)
         '''
                 
