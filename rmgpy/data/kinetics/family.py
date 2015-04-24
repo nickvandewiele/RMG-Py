@@ -78,6 +78,8 @@ class TemplateReaction(Reaction):
     the usual attributes, this class includes a `family` attribute to store the
     family that it was created from, as well as a `estimator` attribute to indicate
     whether it came from a rate rules or a group additivity estimate.
+    
+    family: string
     """
 
     def __init__(self,
@@ -155,8 +157,9 @@ class TemplateReaction(Reaction):
         other.duplicate = self.duplicate
         other.degeneracy = self.degeneracy
         other.pairs = deepcopy(self.pairs)
-        '''
         other.family = deepcopy(self.family)
+        '''
+        
         other.template = deepcopy(self.template)
         other.estimator = deepcopy(self.estimator)
         '''
@@ -1303,7 +1306,7 @@ class KineticsFamily(Database):
                     products = products if forward else reactants,
                     degeneracy = 1,
                     reversible = True,
-                    family = self,
+                    family = self.label,
                 )
                 
                 reaction.getReactionPairs(self.label)

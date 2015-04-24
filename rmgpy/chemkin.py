@@ -1471,18 +1471,18 @@ def writeKineticsEntry(reaction, speciesList, verbose = True, javaLibrary = Fals
         
         # Next line of comment contains information about the type of reaction
         if isinstance(reaction, TemplateReaction):
-            string += '! Template reaction: {0!s}\n'.format(reaction.family.label)
+            string += '! Template reaction: {0!s}\n'.format(reaction.getSource())
         elif isinstance(reaction, LibraryReaction):
-            string += '! Library reaction: {0!s}\n'.format(reaction.library.label)
+            string += '! Library reaction: {0!s}\n'.format(reaction.getSource())
         elif isinstance(reaction, PDepReaction):
             string += '! PDep reaction: {0!s}\n'.format(reaction.network)          
             if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
                 # Print additional information about the pdep network's high-P limit reactions if in debug mode.
                 for rxn in reaction.network.pathReactions:
                     if isinstance(rxn, LibraryReaction):
-                        string += '! High-P limit: {0} (Library reaction: {1!s})\n'.format(rxn, rxn.library.label)
+                        string += '! High-P limit: {0} (Library reaction: {1!s})\n'.format(rxn, rxn.getSource())
                     else:
-                        string += '! High-P limit: {0} (Template reaction: {1!s})\n'.format(rxn, rxn.family.label)   
+                        string += '! High-P limit: {0} (Template reaction: {1!s})\n'.format(rxn, rxn.getSource())   
     
         # Remaining lines of comments taken from reaction kinetics
         if reaction.kinetics.comment:

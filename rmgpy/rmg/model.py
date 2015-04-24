@@ -599,9 +599,9 @@ class CoreEdgeReactionModel:
             
         # Note in the log
         if isinstance(forward, TemplateReaction):
-            logging.debug('Creating new {0} template reaction {1}'.format(forward.family.label, forward))
+            logging.debug('Creating new {0} template reaction {1}'.format(forward.getSource(), forward))
         elif isinstance(forward, DepositoryReaction):
-            logging.debug('Creating new {0} reaction {1}'.format(forward.getSource().label, forward))
+            logging.debug('Creating new {0} reaction {1}'.format(forward.getSource(), forward))
         elif isinstance(forward, LibraryReaction):
             logging.debug('Creating new library reaction {0}'.format(forward))
         else:
@@ -778,6 +778,7 @@ class CoreEdgeReactionModel:
         # Generate kinetics of new reactions
         logging.info('Generating kinetics for new reactions...')
         for reaction in newReactionList:
+            family = database.kinetics.families[reaction.family]
             # If the reaction already has kinetics (e.g. from a library),
             # assume the kinetics are satisfactory
             if reaction.kinetics is None:
@@ -788,7 +789,7 @@ class CoreEdgeReactionModel:
                 if not isForward:
                     reaction.reactants, reaction.products = reaction.products, reaction.reactants
                     reaction.pairs = [(p,r) for r,p in reaction.pairs]
-                if reaction.family.ownReverse and hasattr(reaction,'reverse'):
+                if family.ownReverse and hasattr(reaction,'reverse'):
                     if not isForward:
                         reaction.template = reaction.reverse.template
                         reaction.labeledAtoms = reaction.reverse.labeledAtoms
@@ -919,43 +920,46 @@ class CoreEdgeReactionModel:
         """
         Generate best possible kinetics for the given `reaction` using the kinetics database.
         """
+        database = rmgpy.data.rmg.database
         # Only reactions from families should be missing kinetics
         assert isinstance(reaction, TemplateReaction)
         
         # Get the kinetics for the reaction
         
         # Generate metadata about the reaction that we will need later
-        reaction.template = reaction.family.getReactionTemplate(reaction)
+        family = database.kinetics.families[reaction.family]
+        reaction.template = family.getReactionTemplate(reaction)
         
-        kinetics, source, entry, isForward = reaction.family.getKinetics(reaction, template=reaction.template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
+        kinetics, source, entry, isForward = family.getKinetics(reaction, template=reaction.template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
         # Get the enthalpy of reaction at 298 K
         H298 = reaction.getEnthalpyOfReaction(298)
         G298 = reaction.getFreeEnergyOfReaction(298)
         
-        if reaction.family.ownReverse and hasattr(reaction,'reverse'):
+        if family.ownReverse and hasattr(reaction,'reverse'):
             
             # The kinetics family is its own reverse, so we could estimate kinetics in either direction
             
             # Generate metadata about the reaction that we will need later
-            reaction.reverse.template = reaction.reverse.family.getReactionTemplate(reaction.reverse)
+            family = database.kinetics.families[reaction.reverse.family]
+            reaction.reverse.template = family.getReactionTemplate(reaction.reverse)
             
             # First get the kinetics for the other direction
-            rev_kinetics, rev_source, rev_entry, rev_isForward = reaction.family.getKinetics(reaction.reverse, template=reaction.reverse.template, degeneracy=reaction.reverse.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
+            rev_kinetics, rev_source, rev_entry, rev_isForward = family.getKinetics(reaction.reverse, template=reaction.reverse.template, degeneracy=reaction.reverse.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
             # Now decide which direction's kinetics to keep
             keepReverse = False
             if (entry is not None and rev_entry is None):
                 # Only the forward has a source - use forward.
-                reason = "This direction matched an entry in {0}, the other was just an estimate.".format(reaction.family.label)
+                reason = "This direction matched an entry in {0}, the other was just an estimate.".format(family.label)
             elif (entry is None and rev_entry is not None):
                 # Only the reverse has a source - use reverse.
                 keepReverse = True
-                reason = "This direction matched an entry in {0}, the other was just an estimate.".format(reaction.family.label)
+                reason = "This direction matched an entry in {0}, the other was just an estimate.".format(family.label)
             elif (entry is not None and rev_entry is not None 
                   and entry is rev_entry):
                 # Both forward and reverse have the same source and entry
                 # Use the one for which the kinetics is the forward kinetics          
                 keepReverse = G298 > 0 and isForward and rev_isForward
-                reason = "Both directions matched the same entry in {0}, but this direction is exergonic.".format(reaction.family.label)
+                reason = "Both directions matched the same entry in {0}, but this direction is exergonic.".format(family.label)
             elif self.kineticsEstimator == 'group additivity' and (kinetics.comment.find("Fitted to 1 rate")>0
                   and not rev_kinetics.comment.find("Fitted to 1 rate")>0) :
                     # forward kinetics were fitted to only 1 rate, but reverse are hopefully better
