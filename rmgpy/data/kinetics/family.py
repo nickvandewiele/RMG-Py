@@ -1213,36 +1213,41 @@ class KineticsFamily(Database):
             pass
         else:
             if products is not None:
+                
+                if not forward:
+                    reactants, products  = products, reactants 
+                
                 # Return the reactions as containing Species objects, not Molecule objects
                 reactants = [Species(molecule=[mol.copy(deep=True)]) for mol in reactants]
                 products = [Species(molecule=[mol.copy(deep=True)]) for mol in products]
                 
+                # why do we need to sort the reactant Species?
                 reactants.sort(key=lambda spc: spc.label)
                 products.sort(key=lambda spc: spc.label)
                 
                 if self.isIdenticalReaction(reactants, products):
                     return None
 
-                    
-                # Create and return template reaction object
-                reaction = TemplateReaction(
-                    reactants = reactants if forward else products,
-                    products = products if forward else reactants,
-                    degeneracy = 1,
-                    reversible = True,
-                    family = self.label,
-                )
-                
-                
                 # Store the labeled atoms so we can recover them later
                 # (e.g. for generating templates)
                 labeledAtoms = {}
-                for i, reactant in enumerate(reaction.reactants):
+                for i, reactant in enumerate(reactants):
                     dict_i = {}
                     for label, atom in reactant.molecule[0].getLabeledAtoms().items():
                         dict_i[reactant.molecule[0].atoms.index(atom)] = label
                     labeledAtoms[i] = dict_i
-                reaction.labeledAtoms = labeledAtoms
+                    
+                # Create and return template reaction object
+                reaction = TemplateReaction(
+                    reactants = reactants,
+                    products = products,
+                    degeneracy = 1,
+                    reversible = True,
+                    family = self.label,
+                    labeledAtoms = labeledAtoms
+                )
+                
+
                 
                 # Clear atom labeling from all reactant/product structures
                 for struct in itertools.chain(reactants, products):
