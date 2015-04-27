@@ -1176,6 +1176,11 @@ class KineticsFamily(Database):
         Checks whether the reactants are identical to the products,
         which would designate the reaction is an identical reaction, 
         and should be ignored.
+
+        reactants: list(Species)
+        products: list(Species)
+
+        return: Boolean
         """
         
         
@@ -1198,6 +1203,8 @@ class KineticsFamily(Database):
         then converting reactant/product Molecule objects into Species objects.
         
         reactants: list(Molecule)
+
+        returns: None or TemplateReaction
         """
         try:
             products = self.__generateProductStructures(reactants, mapping, forward, failsSpeciesConstraints)
