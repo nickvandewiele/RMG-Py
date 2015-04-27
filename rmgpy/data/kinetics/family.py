@@ -1262,7 +1262,28 @@ class KineticsFamily(Database):
         if database.forbiddenStructures.isMoleculeForbidden(molecule):
             return True
         return False
-
+    
+    
+    def isIdenticalReaction(self, reactants, products):
+        """
+        Checks whether the reactants are identical to the products,
+        which would designate the reaction is an identical reaction, 
+        and should be ignored.
+        """
+        
+        
+        # Make sure the products are in fact different than the reactants
+        if len(reactants) == len(products) == 1:
+            if reactants[0] == products[0]:
+                return True
+        elif len(reactants) == len(products) == 2:
+            if reactants[0] == products[0] and reactants[1] == products[1]:
+                return True
+            elif reactants[0] == products[1] and reactants[1] == products[0]:
+                return True
+            
+        return False
+        
     def __createReaction(self, reactants, mapping, forward, failsSpeciesConstraints):
         """
         Create a new TemplateReaction object using the reactants Molecules and the mapping
@@ -1286,15 +1307,9 @@ class KineticsFamily(Database):
                 reactants.sort(key=lambda spc: spc.label)
                 products.sort(key=lambda spc: spc.label)
                 
-                # Make sure the products are in fact different than the reactants
-                if len(reactants) == len(products) == 1:
-                    if reactants[0] == products[0]:
-                        return None
-                elif len(reactants) == len(products) == 2:
-                    if reactants[0] == products[0] and reactants[1] == products[1]:
-                        return None
-                    elif reactants[0] == products[1] and reactants[1] == products[0]:
-                        return None
+                if self.isIdenticalReaction(reactants, products):
+                    return None
+
                     
                 # Create and return template reaction object
                 reaction = TemplateReaction(
