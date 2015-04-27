@@ -87,6 +87,7 @@ class TemplateReaction(Reaction):
                 degeneracy=1,
                 family=None,
                 estimator=None,
+                labeledAtoms = None
                 ):
         Reaction.__init__(self,
                           index=index,
@@ -100,6 +101,7 @@ class TemplateReaction(Reaction):
                           )
         self.family = family
         self.estimator = estimator
+        self.labeledAtoms = labeledAtoms
 
     def __reduce__(self):
         """
@@ -114,7 +116,8 @@ class TemplateReaction(Reaction):
                                    self.duplicate,
                                    self.degeneracy,
                                    self.family,
-                                   self.estimator
+                                   self.estimator, 
+                                   self.labeledAtoms
                                    ))
 
     def __eq__(self, other):
@@ -145,6 +148,7 @@ class TemplateReaction(Reaction):
         other.duplicate = self.duplicate
         other.degeneracy = self.degeneracy
         other.family = deepcopy(self.family)
+        other.labeledAtoms = deepcopy(self.labeledAtoms)
         '''
         
         other.estimator = deepcopy(self.estimator)
