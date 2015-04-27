@@ -96,7 +96,6 @@ class PDepReaction(rmgpy.reaction.Reaction):
                                self.transitionState,
                                self.duplicate,
                                self.degeneracy,
-                               self.pairs
                                ))
     
     def getSource(self):

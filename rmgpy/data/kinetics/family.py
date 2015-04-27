@@ -63,12 +63,6 @@ class InvalidActionError(Exception):
     """
     pass
 
-class ReactionPairsError(Exception):
-    """
-    An exception to be raised when an error occurs while working with reaction
-    pairs.
-    """
-    pass
 
 ################################################################################
 
@@ -91,7 +85,6 @@ class TemplateReaction(Reaction):
                 transitionState=None,
                 duplicate=False,
                 degeneracy=1,
-                pairs=None,
                 family=None,
                 estimator=None,
                 ):
@@ -104,7 +97,6 @@ class TemplateReaction(Reaction):
                           transitionState=transitionState,
                           duplicate=duplicate,
                           degeneracy=degeneracy,
-                          pairs=pairs
                           )
         self.family = family
         self.estimator = estimator
@@ -121,7 +113,6 @@ class TemplateReaction(Reaction):
                                    self.transitionState,
                                    self.duplicate,
                                    self.degeneracy,
-                                   self.pairs,
                                    self.family,
                                    self.estimator
                                    ))
@@ -153,7 +144,6 @@ class TemplateReaction(Reaction):
         other.transitionState = deepcopy(self.transitionState)
         other.duplicate = self.duplicate
         other.degeneracy = self.degeneracy
-        other.pairs = deepcopy(self.pairs)
         other.family = deepcopy(self.family)
         '''
         
@@ -172,93 +162,6 @@ class TemplateReaction(Reaction):
         """
         return self.family
     
-    def getReactionPairs(self):
-        """
-        For a given `reaction` with properly-labeled :class:`Molecule` objects
-        as the reactants, return the reactant-product pairs to use when
-        performing flux analysis.
-        """
-        pairs = []; error = False
-        if len(self.reactants) == 1 or len(self.products) == 1:
-            # When there is only one reactant (or one product), it is paired 
-            # with each of the products (reactants)
-            for reactant in self.reactants:
-                for product in self.products:
-                    pairs.append([reactant,product])
-        elif self.family.lower() == 'h_abstraction':
-            # Hardcoding for hydrogen abstraction: pair the reactant containing
-            # *1 with the product containing *3 and vice versa
-            assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].molecule[0].containsLabeledAtom('*1'):
-                if self.products[0].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-            elif self.reactants[1].molecule[0].containsLabeledAtom('*1'):
-                if self.products[1].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-        elif self.family.lower() == 'disproportionation':
-            # Hardcoding for disproportionation: pair the reactant containing
-            # *1 with the product containing *1
-            assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].molecule[0].containsLabeledAtom('*1'):
-                if self.products[0].molecule[0].containsLabeledAtom('*1'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].molecule[0].containsLabeledAtom('*1'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-            elif self.reactants[1].molecule[0].containsLabeledAtom('*1'):
-                if self.products[1].molecule[0].containsLabeledAtom('*1'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].molecule[0].containsLabeledAtom('*1'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-        elif self.family.lower() in ['substitution_o', 'substitutions']:
-            # Hardcoding for Substitution_O: pair the reactant containing
-            # *2 with the product containing *3 and vice versa
-            assert len(self.reactants) == len(self.products) == 2
-            if self.reactants[0].molecule[0].containsLabeledAtom('*2'):
-                if self.products[0].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[1].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-            elif self.reactants[1].molecule[0].containsLabeledAtom('*2'):
-                if self.products[1].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[0]])
-                    pairs.append([self.reactants[1],self.products[1]])
-                elif self.products[0].molecule[0].containsLabeledAtom('*3'):
-                    pairs.append([self.reactants[0],self.products[1]])
-                    pairs.append([self.reactants[1],self.products[0]])
-                else:
-                    error = True
-        else:
-            error = True
-            
-        if error:
-            raise ReactionPairsError('Unable to determine reaction pairs for {0!s} reaction {1!s}.'.format(self.family, self))
-        else:
-            self.pairs = pairs
-            
         
 ################################################################################
 
@@ -1288,8 +1191,7 @@ class KineticsFamily(Database):
         """
         Create a new TemplateReaction object using the reactants Molecules and the mapping
         by first generating all possible product Molecule objects
-        then converting reactant/product Molecule objects into Species objects
-        and then generating the corresponding reaction pairs of reactants vs products.
+        then converting reactant/product Molecule objects into Species objects.
         
         reactants: list(Molecule)
         """
@@ -1320,10 +1222,9 @@ class KineticsFamily(Database):
                     family = self.label,
                 )
                 
-                reaction.getReactionPairs()
                 
                 # Store the labeled atoms so we can recover them later
-                # (e.g. for generating reaction pairs and templates)
+                # (e.g. for generating templates)
                 labeledAtoms = {}
                 for i, reactant in enumerate(reaction.reactants):
                     dict_i = {}

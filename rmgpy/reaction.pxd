@@ -46,7 +46,6 @@ cdef class Reaction:
     cdef public KineticsModel kinetics
     cdef public bint duplicate
     cdef public int degeneracy
-    cdef public list pairs
     
     cpdef bint isIsomerization(self)
 
@@ -98,7 +97,6 @@ cdef class Reaction:
 
     cpdef bint isBalanced(self)
     
-    cpdef generatePairs(self)
     
     cpdef copy(self)
     

@@ -85,7 +85,6 @@ class Reaction(object):
     `transitionState`   :class:`TransitionState`    The transition state
     `duplicate`         ``bool``                    ``True`` if the reaction is known to be a duplicate, ``False`` if not
     `degeneracy`        :class:`double`             The reaction path degeneracy for the reaction
-    `pairs`             ``list``                    Reactant-product pairings to use in converting reaction flux to species flux
     =================== =========================== ============================
     
     """
@@ -100,7 +99,6 @@ class Reaction(object):
                  transitionState=None,
                  duplicate=False,
                  degeneracy=1,
-                 pairs=None
                  ):
         self.index = index
         self.label = label
@@ -111,7 +109,6 @@ class Reaction(object):
         self.transitionState = transitionState
         self.duplicate = duplicate
         self.degeneracy = degeneracy
-        self.pairs = pairs
         
         if diffusionLimiter.enabled:
             self.__k_effective_cache = {}
@@ -131,7 +128,6 @@ class Reaction(object):
         if self.transitionState is not None: string += 'transitionState={0!r}, '.format(self.transitionState)
         if self.duplicate: string += 'duplicate={0}, '.format(self.duplicate)
         if self.degeneracy != 1: string += 'degeneracy={0:d}, '.format(self.degeneracy)
-        if self.pairs is not None: string += 'pairs={0}, '.format(self.pairs)
         string = string[:-2] + ')'
         return string
 
@@ -156,7 +152,6 @@ class Reaction(object):
                            self.transitionState,
                            self.duplicate,
                            self.degeneracy,
-                           self.pairs
                            ))
 
     def __hash__(self):
@@ -874,58 +869,6 @@ class Reaction(object):
         
         return True
     
-    def generatePairs(self):
-        """
-        Generate the reactant-product pairs to use for this reaction when
-        performing flux analysis. The exact procedure for doing so depends on
-        the reaction type:
-        
-        =================== =============== ========================================
-        Reaction type       Template        Resulting pairs
-        =================== =============== ========================================
-        Isomerization       A     -> C      (A,C)
-        Dissociation        A     -> C + D  (A,C), (A,D)
-        Association         A + B -> C      (A,C), (B,C)
-        Bimolecular         A + B -> C + D  (A,C), (B,D) *or* (A,D), (B,C)
-        =================== =============== ========================================
-        
-        There are a number of ways of determining the correct pairing for 
-        bimolecular reactions. Here we try a simple similarity analysis by comparing
-        the number of heavy atoms (carbons and oxygens at the moment). This should
-        work most of the time, but a more rigorous algorithm may be needed for
-        some cases.
-        """
-        self.pairs = []
-        
-        if len(self.reactants) == 1 or len(self.products) == 1:
-            # Pair each reactant with each product
-            for reactant in self.reactants:
-                for product in self.products:
-                    self.pairs.append((reactant, product))
-            
-        else:
-                
-            reactants = self.reactants[:]
-            products = self.products[:]
-            
-            reactantCarbons = [sum([1 for atom in reactant.molecule[0].atoms if atom.isCarbon()]) for reactant in reactants]
-            productCarbons  = [sum([1 for atom in  product.molecule[0].atoms if atom.isCarbon()]) for product  in products ]
-            reactantOxygens = [sum([1 for atom in reactant.molecule[0].atoms if atom.isOxygen()]) for reactant in reactants]
-            productOxygens  = [sum([1 for atom in  product.molecule[0].atoms if atom.isOxygen()]) for product  in products ]
-            
-            # Sort the reactants and products by carbon number, then by oxygen number
-            reactants = [(carbon, oxygen, reactant) for carbon, oxygen, reactant in zip(reactantCarbons,reactantOxygens,reactants)]
-            reactants.sort(key=lambda t: t[0])
-            products = [(carbon, oxygen, product) for carbon, oxygen, product in zip(productCarbons,productOxygens,products)]
-            products.sort(key=lambda t: t[0])
-            
-            while len(reactants) > 1 and len(products) > 1:
-                self.pairs.append((reactants[-1][2], products[-1][2]))
-                reactants.pop()
-                products.pop()
-            for reactant in reactants:
-                for product in products:
-                    self.pairs.append((reactant[2], product[2]))
     
     def draw(self, path):
         """
@@ -1029,7 +972,6 @@ class Reaction(object):
         other.transitionState = deepcopy(self.transitionState)
         other.duplicate = self.duplicate
         other.degeneracy = self.degeneracy
-        other.pairs = deepcopy(self.pairs)
         
         return other
 

@@ -582,13 +582,7 @@ class CoreEdgeReactionModel:
         # Determine the proper species objects for all reactants and products
         reactants = [self.makeNewSpecies(reactant)[0] for reactant in forward.reactants]
         products  = [self.makeNewSpecies(product)[0]  for product  in forward.products ]
-        if forward.pairs is not None:
-            for pairIndex in range(len(forward.pairs)):
-                reactantIndex = forward.reactants.index(forward.pairs[pairIndex][0])
-                productIndex = forward.products.index(forward.pairs[pairIndex][1])
-                forward.pairs[pairIndex] = (reactants[reactantIndex], products[productIndex])
-                if hasattr(forward, 'reverse'):
-                    forward.reverse.pairs[pairIndex] = (products[productIndex], reactants[reactantIndex])
+
         forward.reactants = reactants
         forward.products  = products
 
@@ -596,12 +590,6 @@ class CoreEdgeReactionModel:
             found, rxn = self.checkForExistingReaction(forward)
             if found: return rxn, False
 
-        # Generate the reaction pairs if not yet defined
-        if forward.pairs is None:
-            forward.generatePairs()
-            if hasattr(forward, 'reverse'):
-                forward.reverse.generatePairs()
-            
         # Note in the log
         if isinstance(forward, TemplateReaction):
             logging.debug('Creating new {0} template reaction {1}'.format(forward.getSource(), forward))
@@ -655,9 +643,6 @@ class CoreEdgeReactionModel:
         forward.reverse = None
         forward.reversible = False
 
-        # Generate the reaction pairs if not yet defined
-        if forward.pairs is None:
-            forward.generatePairs()
             
         # Set reaction index and increment the counter
         forward.index = self.reactionCounter + 1
@@ -793,7 +778,6 @@ class CoreEdgeReactionModel:
                 # Flip the reaction direction if the kinetics are defined in the reverse direction
                 if not isForward:
                     reaction.reactants, reaction.products = reaction.products, reaction.reactants
-                    reaction.pairs = [(p,r) for r,p in reaction.pairs]
                 if family.ownReverse and hasattr(reaction,'reverse'):
                     if not isForward:
                         reaction.labeledAtoms = reaction.reverse.labeledAtoms

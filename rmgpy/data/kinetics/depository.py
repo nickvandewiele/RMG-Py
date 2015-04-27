@@ -87,7 +87,6 @@ class DepositoryReaction(Reaction):
                                      self.transitionState,
                                      self.duplicate,
                                      self.degeneracy,
-                                     self.pairs,
                                      self.depository,
                                      self.family,
                                      self.entry

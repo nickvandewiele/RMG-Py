@@ -118,7 +118,6 @@ class LibraryReaction(Reaction):
                                   self.transitionState,
                                   self.duplicate,
                                   self.degeneracy,
-                                  self.pairs,
                                   self.library,
                                   self.entry
                                   ))
