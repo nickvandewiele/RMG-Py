@@ -1171,30 +1171,6 @@ class KineticsFamily(Database):
         return False
     
     
-    def isIdenticalReaction(self, reactants, products):
-        """
-        Checks whether the reactants are identical to the products,
-        which would designate the reaction is an identical reaction, 
-        and should be ignored.
-
-        reactants: list(Species)
-        products: list(Species)
-
-        return: Boolean
-        """
-        
-        
-        # Make sure the products are in fact different than the reactants
-        if len(reactants) == len(products) == 1:
-            if reactants[0] == products[0]:
-                return True
-        elif len(reactants) == len(products) == 2:
-            if reactants[0] == products[0] and reactants[1] == products[1]:
-                return True
-            elif reactants[0] == products[1] and reactants[1] == products[0]:
-                return True
-            
-        return False
         
     def __createReaction(self, reactants, mapping, forward, failsSpeciesConstraints):
         """
@@ -1221,26 +1197,27 @@ class KineticsFamily(Database):
                 if not forward:
                     reactants, products  = products, reactants 
                 
-                # Return the reactions as containing Species objects, not Molecule objects
-                reactants = [Species(molecule=[mol.copy(deep=True)]) for mol in reactants]
-                products = [Species(molecule=[mol.copy(deep=True)]) for mol in products]
-                
-                if self.isIdenticalReaction(reactants, products):
-                    return None
 
                 # Store the labeled atoms so we can recover them later
                 # (e.g. for generating templates)
                 labeledAtoms = {}
                 for i, reactant in enumerate(reactants):
                     dict_i = {}
-                    for label, atom in reactant.molecule[0].getLabeledAtoms().items():
-                        dict_i[reactant.molecule[0].atoms.index(atom)] = label
+                    for label, atom in reactant.getLabeledAtoms().items():
+                        dict_i[reactant.atoms.index(atom)] = label
                     labeledAtoms[i] = dict_i
-                    
+                
+                # Return the reactions as containing Species objects, not Molecule objects
+                reactants_ids = sorted([mol.toAugmentedInChI() for mol in reactants])
+                products_ids = sorted([mol.toAugmentedInChI() for mol in products])
+                
+                if sorted(reactants_ids) == sorted(products_ids):
+                    return None
+
                 # Create and return template reaction object
                 reaction = TemplateReaction(
-                    reactants = reactants,
-                    products = products,
+                    reactants = reactants_ids,
+                    products = products_ids,
                     degeneracy = 1,
                     reversible = True,
                     family = self.label,
