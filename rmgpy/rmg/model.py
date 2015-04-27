@@ -904,6 +904,38 @@ class CoreEdgeReactionModel:
                     if rxn in self.edge.reactions:
                         self.edge.reactions.remove(rxn)
 
+    def generateThermo(self, reaction):
+        """
+        Generate the thermochemistry (H298, G298) of the parameter reaction.
+
+        We assume that the thermo dictionary contains the thermochemistry for
+        every species of the reaction already!
+
+        Raises a KeyError when the augmented inchi could not be found in the 
+        thermo dictionary.
+
+        return: reaction enthalpy, free energy in J/mol at 298K.
+        """
+        cython.declare(dHrxn=cython.double, dGrxn=cython.double)
+        dHrxn, dGrxn = 0.0, 0.0
+
+        try:
+            for aug_inchi in self.reactants:
+                thermo = self.thermoDict[aug_inchi]
+                dHrxn -= thermo.getEnthalpy(T)
+                dGrxn -= thermo.getFreeEnergy(T)
+
+            for aug_inchi in self.products:
+                thermo = self.thermoDict[aug_inchi]
+                dHrxn += thermo.getEnthalpy(T)
+                dGrxn += thermo.getFreeEnergy(T)
+        except KeyError, e:
+            raise e
+        
+
+        return dHrxn, dGrxn
+
+
     def generateKinetics(self, reaction):
         """
         Generate best possible kinetics for the given `reaction` using the kinetics database.
@@ -919,9 +951,8 @@ class CoreEdgeReactionModel:
         template = family.getReactionTemplate(reaction)
         
         kinetics, source, entry, isForward = family.getKinetics(reaction, template=template, degeneracy=reaction.degeneracy, estimator=self.kineticsEstimator, returnAllKinetics=False)
-        # Get the enthalpy of reaction at 298 K
-        H298 = reaction.getEnthalpyOfReaction(298)
-        G298 = reaction.getFreeEnergyOfReaction(298)
+
+        H298, G298 = self.generateThermo(reaction)
         
         if family.ownReverse and hasattr(reaction,'reverse'):
             
