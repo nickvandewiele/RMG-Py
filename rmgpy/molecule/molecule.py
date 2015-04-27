@@ -1355,7 +1355,7 @@ class Molecule(Graph):
             if not Chem.inchi.INCHI_AVAILABLE:
                 return "RDKitInstalledWithoutInChI"
             rdkitmol = self.toRDKitMol()
-            self.InChI = Chem.inchi.MolToInchi(rdkitmol, options='-SNon').split('/', 1)[1]#split on first occurrence of '/'
+            self.InChI = Chem.inchi.MolToInchi(rdkitmol, options='-SNon')
             return self.InChI
         except:
             pass
@@ -1364,7 +1364,7 @@ class Molecule(Graph):
         obConversion = openbabel.OBConversion()
         obConversion.SetOutFormat('inchi')
         obConversion.SetOptions('w', openbabel.OBConversion.OUTOPTIONS)
-        self.InChI = obConversion.WriteString(obmol).strip().split('/', 1)[1]#split on first occurrence of '/'
+        self.InChI = obConversion.WriteString(obmol).strip()
         return self.InChI
 
     def createMultiplicityLayer(self):

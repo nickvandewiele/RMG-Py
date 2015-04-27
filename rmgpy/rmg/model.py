@@ -460,11 +460,11 @@ class CoreEdgeReactionModel:
                 spec.coreSizeAtCreation = existing_spc.coreSizeAtCreation
                 #we assume that existing species will have their thermo stored in self.thermoDict
                 try:
-                    spec.thermo = self.thermoDict[existing_spc.getAugmentedInChI()]
+                    spec.thermo = self.thermoDict[existing_spc.getAugmentedInChI().split('/', 1)[1]]
                 except KeyError:
                     if database:#only generate thermo if database is loaded
                         thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                        self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
+                        self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc#split on first occurrence of '/'
             else:
                 logging.debug('Creating new species {0}'.format(spec.label))
                 if reactive:
@@ -477,9 +477,9 @@ class CoreEdgeReactionModel:
                 spec.coreSizeAtCreation = len(self.core.species)
                 if database:#only generate thermo if database is loaded
                     thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                    self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
+                    self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
                 
-                aug_inchi = spec.getAugmentedInChI()
+                aug_inchi = spec.getAugmentedInChI().split('/', 1)[1]
                 self.speciesDict[aug_inchi] = spec
 
                 # Since the species is new, add it to the list of new species
@@ -1274,7 +1274,7 @@ class CoreEdgeReactionModel:
                         self.reactionDict[family][reactant1][reactant2].remove(tempRxnToBeDeleted)
 
         # remove from the global list of species, to free memory
-        del self.speciesDict[spec.getAugmentedInChI()]
+        del self.speciesDict[spec.getAugmentedInChI().split('/', 1)[1]]
         if spec in self.speciesCache:
             self.speciesCache.remove(spec)
             self.speciesCache.append(None)
@@ -1398,7 +1398,7 @@ class CoreEdgeReactionModel:
 
         for spec in self.newSpeciesSet:            
             if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
+            self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToCore(spec)
 
@@ -1408,11 +1408,11 @@ class CoreEdgeReactionModel:
                 # we need to make sure the barrier is positive.
                 # ...but are Seed Mechanisms run through PDep? Perhaps not.
                 for spec in itertools.chain(rxn.reactants, rxn.products):
-                    if spec.getAugmentedInChI() in self.thermoDict:
-                        spec.thermo = self.thermoDict[spec.getAugmentedInChI()]
+                    if spec.getAugmentedInChI().split('/', 1)[1] in self.thermoDict:
+                        spec.thermo = self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]]
                     else:
                         thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                        self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
+                        self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
                 rxn.fixBarrierHeight(forcePositive=True)
             self.addReactionToCore(rxn)
         
@@ -1465,7 +1465,7 @@ class CoreEdgeReactionModel:
        
         for spec in self.newSpeciesSet:
             if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.getAugmentedInChI()] = thermo_spc
+            self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
             spec.generateTransportData(database)
             self.addSpeciesToEdge(spec)
 
