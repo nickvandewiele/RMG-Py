@@ -172,7 +172,7 @@ class TemplateReaction(Reaction):
         """
         return self.family
     
-    def getReactionPairs(self, label):
+    def getReactionPairs(self):
         """
         For a given `reaction` with properly-labeled :class:`Molecule` objects
         as the reactants, return the reactant-product pairs to use when
@@ -185,7 +185,7 @@ class TemplateReaction(Reaction):
             for reactant in self.reactants:
                 for product in self.products:
                     pairs.append([reactant,product])
-        elif label.lower() == 'h_abstraction':
+        elif self.family.lower() == 'h_abstraction':
             # Hardcoding for hydrogen abstraction: pair the reactant containing
             # *1 with the product containing *3 and vice versa
             assert len(self.reactants) == len(self.products) == 2
@@ -207,7 +207,7 @@ class TemplateReaction(Reaction):
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
                     error = True
-        elif label.lower() == 'disproportionation':
+        elif self.family.lower() == 'disproportionation':
             # Hardcoding for disproportionation: pair the reactant containing
             # *1 with the product containing *1
             assert len(self.reactants) == len(self.products) == 2
@@ -229,7 +229,7 @@ class TemplateReaction(Reaction):
                     pairs.append([self.reactants[1],self.products[0]])
                 else:
                     error = True
-        elif label.lower() in ['substitution_o', 'substitutions']:
+        elif self.family.lower() in ['substitution_o', 'substitutions']:
             # Hardcoding for Substitution_O: pair the reactant containing
             # *2 with the product containing *3 and vice versa
             assert len(self.reactants) == len(self.products) == 2
@@ -255,7 +255,7 @@ class TemplateReaction(Reaction):
             error = True
             
         if error:
-            raise ReactionPairsError('Unable to determine reaction pairs for {0!s} reaction {1!s}.'.format(label, self))
+            raise ReactionPairsError('Unable to determine reaction pairs for {0!s} reaction {1!s}.'.format(self.family, self))
         else:
             self.pairs = pairs
             
@@ -1320,7 +1320,7 @@ class KineticsFamily(Database):
                     family = self.label,
                 )
                 
-                reaction.getReactionPairs(self.label)
+                reaction.getReactionPairs()
                 
                 # Store the labeled atoms so we can recover them later
                 # (e.g. for generating reaction pairs and templates)
