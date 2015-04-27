@@ -1214,6 +1214,10 @@ class KineticsFamily(Database):
         else:
             if products is not None:
                 
+                # sort atoms so that atom labels will never shift due to a posteriori sorting:
+                for mol in itertools.chain(reactants, products):
+                    mol.sortAtoms()
+
                 if not forward:
                     reactants, products  = products, reactants 
                 
