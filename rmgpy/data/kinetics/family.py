@@ -1221,10 +1221,6 @@ class KineticsFamily(Database):
                 reactants = [Species(molecule=[mol.copy(deep=True)]) for mol in reactants]
                 products = [Species(molecule=[mol.copy(deep=True)]) for mol in products]
                 
-                # why do we need to sort the reactant Species?
-                reactants.sort(key=lambda spc: spc.label)
-                products.sort(key=lambda spc: spc.label)
-                
                 if self.isIdenticalReaction(reactants, products):
                     return None
 
