@@ -1283,10 +1283,10 @@ class KineticsFamily(Database):
                     logging.error("Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
                     for reactant in rxn.reactants:
                         logging.info("Reactant")
-                        logging.info(reactant.toAdjacencyList())
+                        logging.info(reactant)
                     for product in rxn.products:
                         logging.info("Product")
-                        logging.info(product.toAdjacencyList())
+                        logging.info(product)
                     raise KineticsError("Did not find reverse reaction in reaction family {0} for reaction {1}.".format(self.label, str(rxn)))
                 rxn.reverse = reactions[0]
             
