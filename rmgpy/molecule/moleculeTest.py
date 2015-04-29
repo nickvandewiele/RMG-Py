@@ -1252,7 +1252,42 @@ class TestMolecule(unittest.TestCase):
         
         self.assertFalse(s == m)
     
+    def testFromAugmentedInChI(self):
+        """
+        Test that augmented inchis are correctly converted into
+        Molecule objects.
+        """
+
+        # methane
+        aug_inchi = 'InChI=1S/CH4/h1H4/mult1'
+        mol = Molecule().fromAugmentedInChI(aug_inchi)
+        self.assertEquals(mol.multiplicity, int(aug_inchi.split('mult')[1]))
+        self.assertEquals(mol.getFormula(), aug_inchi.split('/')[1])
+
+        # methyl
+        aug_inchi = 'InChI=1S/CH3/h1H3/mult2'
+        mol = Molecule().fromAugmentedInChI(aug_inchi)
+        self.assertEquals(mol.multiplicity, int(aug_inchi.split('mult')[1]))
+        self.assertEquals(mol.getFormula(), aug_inchi.split('/')[1])
     
+        # triplet methylene
+        aug_inchi = 'InChI=1S/CH2/h1H2/mult3'
+        mol = Molecule().fromAugmentedInChI(aug_inchi)
+        self.assertEquals(mol.multiplicity, int(aug_inchi.split('mult')[1]))
+        self.assertEquals(mol.getFormula(), aug_inchi.split('/')[1])
+
+        # singlet methylene
+        aug_inchi = 'InChI=1S/CH2/h1H2/mult1'
+        mol = Molecule().fromAugmentedInChI(aug_inchi)
+        self.assertEquals(mol.multiplicity, int(aug_inchi.split('mult')[1]))
+        self.assertEquals(mol.getFormula(), aug_inchi.split('/')[1])
+
+        # two center biradical:
+        aug_inchi = 'InChI=1S/C3H6/c1-3-2/h1-3H2/mult3'
+        mol = Molecule().fromAugmentedInChI(aug_inchi)
+        self.assertEquals(mol.multiplicity, int(aug_inchi.split('mult')[1]))
+        self.assertEquals(mol.getFormula(), aug_inchi.split('/')[1])
+
     def testFromOBMol(self):
             """
             Test that an OBMol object is correctly converted

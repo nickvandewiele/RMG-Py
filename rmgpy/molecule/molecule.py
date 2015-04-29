@@ -1197,11 +1197,25 @@ class Molecule(Graph):
                 self.fromOBMol(obmol)
                 return self
 
-    def fromSMILES(self, smilesstr):
+    def fromAugmentedInChI(self, aug_inchi):
         """
-        Convert a SMILES string `smilesstr` to a molecular structure. Uses
-        `RDKit <http://rdkit.org/>`_ to perform the conversion.
-        This Kekulizes everything, removing all aromatic atom types.
+        Creates a Molecule object from the augmented inchi.
+
+        First, split off the multiplicity.
+        Next, prepend the version layer to the inchi.
+        Next, convert the inchi into a Molecule and
+        set the multiplicity.
+
+        returns Molecule
+        """
+        
+        inchi, mult = aug_inchi.split('/mult')
+        self.InChI = inchi
+        self.fromInChI(inchi, backend='openbabel')
+        self.multiplicity = int(mult)
+        return self
+
+
     def fromSMILES(self, smilesstr, backend='rdkit'):
         """
         Convert a SMILES string `smilesstr` to a molecular structure. Uses 
