@@ -1412,8 +1412,16 @@ class KineticsFamily(Database):
         """
         
         reactants, products = reaction.reactants, reaction.products
+        if isinstance(reaction, TemplateReaction):#inflate the inchi's of the reactants
+            reactants = []
+            for aug_inchi in reaction.reactants:
+                spc = Species(molecule=[Molecule().fromAugmentedInChI(aug_inchi)])
+                reactants.append(spc)
+        else:#deflate the graphs of the products of reactions that are not a TemplateReaction:
+            products = []
+            for product in reaction.products:
+                products.append(product.toAugmentedInChI())
 
-                    
         template = self.forwardTemplate
         rxnList = []
         # Unimolecular reactants: A --> products
