@@ -879,7 +879,7 @@ class KineticsFamily(Database):
         reverse_entries = []
         for entry in entries:
             try:        
-                template = self.groups.getReactionTemplate(entry.item)
+                template = self.groups.getReactionTemplate(entry.item.reactants)
             except UndeterminableKineticsError:
                 # Some entries might be stored in the reverse direction for
                 # this family; save them so we can try this
@@ -936,7 +936,7 @@ class KineticsFamily(Database):
             data = item.generateReverseRateCoefficient()
             
             item = Reaction(reactants=[m.copy() for m in entry.item.products], products=[m.copy() for m in entry.item.reactants])
-            template = self.groups.getReactionTemplate(item)
+            template = self.groups.getReactionTemplate(item.reactants)
             self.calculate_degeneracy(item)
             
             new_entry = Entry(
@@ -1505,10 +1505,11 @@ class KineticsFamily(Database):
         as the reactants, determine the most specific nodes in the tree that
         describe the reaction.
         """
-        #clear previous labels, if there were any:
-        for reactant in reaction.reactants:
-            for molecule in reactant.molecule:
-                molecule.clearLabeledAtoms()
+        #generate the Species object from the augmented inchi:
+        reactants = []
+        for aug_inchi in reaction.reactants:
+            spc = Species(molecule=[Molecule().fromAugmentedInChI(aug_inchi)])
+            reactants.append(spc)
                 
         #transfer reaction atom labels to reactants:
         for i, labels in reaction.labeledAtoms.iteritems():
@@ -1517,7 +1518,7 @@ class KineticsFamily(Database):
             for atom_index, label in labels.iteritems():
                 molecule.atoms[atom_index].label = label
 
-        template = self.groups.getReactionTemplate(reaction)
+        template = self.groups.getReactionTemplate(reactants)
 
         #clear labels, as soon as we have the node match. 
         for struct in itertools.chain(reaction.reactants, reaction.products):

@@ -90,11 +90,13 @@ class KineticsGroups(Database):
             longDesc = longDesc.strip(),
         )
 
-    def getReactionTemplate(self, reaction):
+    def getReactionTemplate(self, reactants):
         """
-        For a given `reaction` with properly-labeled :class:`Molecule` objects
+        For a list of reactant Species with properly-labeled :class:`Species` objects
         as the reactants, determine the most specific nodes in the tree that
         describe the reaction.
+
+        @parameter reactants: list(Species)
         """
 
         # Get forward reaction template and remove any duplicates
@@ -127,7 +129,7 @@ class KineticsGroups(Database):
 
             atomList = group.getLabeledAtoms() # list of atom labels in highest non-union node
 
-            for reactant in reaction.reactants:
+            for reactant in reactants:
                 if isinstance(reactant, Species):
                     reactant = reactant.molecule[0]
                 # Match labeled atoms
@@ -154,15 +156,12 @@ class KineticsGroups(Database):
         if len(template) != len(forwardTemplate):
 #            print 'len(template):', len(template)
 #            print 'len(forwardTemplate):', len(forwardTemplate)
-            msg = 'Unable to find matching template for reaction {0} in reaction family {1}.'.format(str(reaction), str(self)) 
+            msg = 'Unable to find matching template for reactants {0} in reaction family {1}.'.format(str(reactants), str(self)) 
             msg += 'Trying to match {0} but matched {1}'.format(str(forwardTemplate),str(template))
-#            print 'reactants'
-#            for reactant in reaction.reactants:
-#                print reactant.toAdjacencyList() + '\n'
-#            print 'products'
-#            for product in reaction.products:
-#                print product.toAdjacencyList() + '\n'
-            raise UndeterminableKineticsError(reaction, message=msg)
+            print 'reactants'
+            for reactant in reactants:
+                 print reactant.toAdjacencyList() + '\n'
+            raise UndeterminableKineticsError(reactants, message=msg)
 
         return template
 
