@@ -1272,7 +1272,13 @@ class KineticsFamily(Database):
         if self.ownReverse:
             # for each reaction, make its reverse reaction and store in a 'reverse' attribute
             for rxn in reactionList:
-                reactions = self.__generateReactions(rxn.products, products=rxn.reactants, forward=True, failsSpeciesConstraints=failsSpeciesConstraints)
+                #only convert the products, not the reactants, since the products will be used in graph algorithms.
+                products = []
+                for aug_inchi in reaction.products:
+                    spc = Species(molecule=[Molecule().fromAugmentedInChI(aug_inchi)])
+                    products.append(spc)
+
+                reactions = self.__generateReactions(products, products=reactants, forward=True, failsSpeciesConstraints=failsSpeciesConstraints)
                 if len(reactions) != 1:
                     logging.error("Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
                     for reactant in rxn.reactants:
