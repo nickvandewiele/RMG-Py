@@ -1300,7 +1300,9 @@ class KineticsFamily(Database):
         '''
         Generate all possible unimolecular reactions based on the given reactants and template
         
-        reactants: list(Species)
+        @parameter reactants: list(Species)
+        @parameter products: list(String)
+
         '''
         rxnList = []
         reactant = reactants[0]
@@ -1370,29 +1372,30 @@ class KineticsFamily(Database):
         Iterate over the list of Reaction objects and return those reactions 
         that have identical products to the list of product Species passed-in 
         as an arguments. 
+
+        The reactions in @parameter rxnList are all TemplateReaction, 
+        so the reactants/products will be lists of augmented inchis.
+
+        The @parameter products is also a list of augmented inchis.
+
+        We can simply perform a string comparison, assuming that both
+        lists are already ordered.
+
         
-        Compare the list of parameter Species to the reaction's reactants if forward
-        Compare the list of parameter Species to the reaction's products if not forward
+        Compare the products to the reaction's products if forward
+        and vice versa.
         
-        rxnList: list(Reaction)
-        products: list(Species)
+        rxnList: list(TemplateReaction)
+        products: list(String)
         
-        return: list(Reaction)
+        return: list(TemplateReaction)
 
         '''
         filtered = []
         for reaction in rxnList:
             products0 = reaction.products if forward else reaction.reactants
             # Skip reactions that don't match the given products
-            match = False
-            if len(products) == len(products0) == 1:
-                match = products == products0
-            elif len(products) == len(products0) == 2:
-                if products0[0] == products[0] and products0[1] == products[1]:
-                    match = True
-                elif products0[0] == products[1] and products0[1] == products[0]:
-                    match = True
-                
+            match = (products == products0)
             if match: 
                 filtered.append(reaction)
         
@@ -1468,6 +1471,9 @@ class KineticsFamily(Database):
         be a list of :class:`Species` objects, 
         `failsSpeciesConstraints` is an optional function that accepts a :class:`Molecule`
         structure and returns `True` if it is forbidden.
+
+        @parameter reactants: list(Species)
+        @parameter products: list(String)
         """
 
         rxnList = []
