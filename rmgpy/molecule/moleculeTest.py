@@ -1159,6 +1159,49 @@ class TestMolecule(unittest.TestCase):
         self.assertFalse(s == m)
     
     
+    def testFromOBMol(self):
+            """
+            Test that an OBMol object is correctly converted
+            into an RMG Molecule.
+            """
+            import openbabel as ob
+            obConversion = ob.OBConversion()
+            obConversion.SetInAndOutFormats("smi", "inchi")
+
+            #methane
+            smi = 'C'
+            obmol = ob.OBMol()
+            obConversion.ReadString(obmol, smi)
+            obmol.AddHydrogens()
+            obmol.AssignSpinMultiplicity(True)
+
+            mol = Molecule().fromOBMol(obmol)
+            self.assertEquals(mol.getFormula(), 'CH4')
+
+
+            #methyl
+            smi = '[CH3]'
+            obmol = ob.OBMol()
+            obConversion.ReadString(obmol, smi)
+            obmol.AddHydrogens()
+            obmol.AssignSpinMultiplicity(True)
+
+            mol = Molecule().fromOBMol(obmol)
+            self.assertEquals(mol.getFormula(), 'CH3')
+            self.assertEquals(mol.multiplicity, 2)
+
+
+            #methylene
+            smi = '[CH2]'
+            obmol = ob.OBMol()
+            obConversion.ReadString(obmol, smi)
+            obmol.AddHydrogens()
+            obmol.AssignSpinMultiplicity(True)
+
+            mol = Molecule().fromOBMol(obmol)
+            self.assertEquals(mol.getFormula(), 'CH2')
+            self.assertEquals(mol.multiplicity, 3)
+
     @work_in_progress
     def testCountInternalRotorsDimethylAcetylene(self):
         """

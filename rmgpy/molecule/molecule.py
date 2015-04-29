@@ -1281,6 +1281,63 @@ class Molecule(Graph):
         
         return self
 
+    def fromOBMol(self, obmol):
+        """
+        Convert a OpenBabel Mol object `obmol` to a molecular structure. Uses
+        `OpenBabel <http://openbabel.org/>`_ to perform the conversion.
+        """
+        # Below are the declared variables for cythonizing the module
+        cython.declare(i=cython.int)
+        cython.declare(radicalElectrons=cython.int, charge=cython.int, lonePairs=cython.int)
+        cython.declare(atom=Atom, atom1=Atom, atom2=Atom, bond=Bond)
+        
+        self.vertices = []
+        
+        # Add hydrogen atoms to complete molecule if needed
+        obmol.AddHydrogens()
+        # TODO Chem.rdmolops.Kekulize(obmol, clearAromaticFlags=True)
+        
+        # iterate through atoms in obmol
+        for obatom in openbabel.OBMolAtomIter(obmol):
+            idx = obatom.GetIdx()#openbabel idx starts at 1!
+            
+            # Use atomic number as key for element
+            number = obatom.GetAtomicNum()
+            element = elements.getElement(number)
+            # Process charge
+            charge = obatom.GetFormalCharge()
+            obatom_multiplicity = obatom.GetSpinMultiplicity()
+            radicalElectrons =  obatom_multiplicity - 1 if obatom_multiplicity != 0 else 0
+            
+            atom = Atom(element, radicalElectrons, charge, '', 0)
+            self.vertices.append(atom)
+        
+        # iterate through bonds in obmol
+        for obbond in openbabel.OBMolBondIter(obmol):
+            order = 0
+            # Process bond type
+            oborder = obbond.GetBondOrder()
+            if oborder == 1: order = 'S'
+            elif oborder == 2: order = 'D'
+            elif oborder == 3: order = 'T'
+            elif obbond.IsAromatic() : order = 'B'
+
+            bond = Bond(self.vertices[obbond.GetBeginAtomIdx() - 1], self.vertices[obbond.GetEndAtomIdx() - 1], order)#python array indices start at 0
+            self.addBond(bond)
+
+        
+        # Set atom types and connectivity values
+        self.updateConnectivityValues()
+        self.updateLonePairs()
+        self.updateAtomTypes()
+        
+        # Assume this is always true
+        # There are cases where 2 radicalElectrons is a singlet, but
+        # the triplet is often more stable, 
+        self.multiplicity = self.getRadicalCount() + 1
+        
+        return self
+
     def fromAdjacencyList(self, adjlist, saturateH=False):
         """
         Convert a string adjacency list `adjlist` to a molecular structure.
