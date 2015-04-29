@@ -1379,7 +1379,9 @@ class CoreEdgeReactionModel:
         seedMechanism = database.kinetics.libraries[seedMechanism]
 
         for entry in seedMechanism.entries.values():
-            rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=seedMechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
+            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
+            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
+            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=seedMechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
             r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
@@ -1446,7 +1448,9 @@ class CoreEdgeReactionModel:
         reactionLibrary = database.kinetics.libraries[reactionLibrary]
 
         for entry in reactionLibrary.entries.values():
-            rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=reactionLibrary, kinetics=entry.data, duplicate=entry.item.duplicate)
+            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
+            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
+            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=reactionLibrary, kinetics=entry.data, duplicate=entry.item.duplicate)
             r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             if not isNew: logging.info("This library reaction was not new: {0}".format(rxn))
             
@@ -1494,7 +1498,9 @@ class CoreEdgeReactionModel:
         reactionLibrary = database.kinetics.libraries[reactionLib]
 
         for entry in reactionLibrary.entries.values():
-            rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=reactionLibrary, kinetics=entry.data)
+            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
+            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
+            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=reactionLibrary, kinetics=entry.data)
             rxn.reactants = [self.makeNewSpecies(reactant)[0] for reactant in rxn.reactants]
             rxn.products = [self.makeNewSpecies(product)[0] for product in rxn.products]
 
