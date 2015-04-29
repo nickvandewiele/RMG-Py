@@ -1168,29 +1168,45 @@ class Molecule(Graph):
         os.unlink(tempFileName)
         return png
 
-    def fromInChI(self, inchistr):
+    def fromInChI(self, inchistr, backend='rdkit'):
         """
-        Convert an InChI string `inchistr` to a molecular structure. Uses
-        `RDKit <http://rdkit.org/>`_ to perform the conversion.
-        This Kekulizes everything, removing all aromatic atom types.
+        Convert an InChI string `inchistr` to a molecular structure. Uses 
+        a user-specified backend for conversion, currently supporting
+        rdkit (default) and openbabel.
         """
         #RDkit was improperly handling the Hydrogen radical from InChI
         if inchistr == 'InChI=1/H' or inchistr == 'InChI=1S/H':
-            self.fromSMILES('[H]')
+            self.fromSMILES('[H]', backend=backend)
             return self          
         elif inchistr == 'InChI=1/He' or inchistr == 'InChI=1S/He':
-            self.fromSMILES('[He]')
+            self.fromSMILES('[He]', backend=backend)
             return self
+            
         else:
-            rdkitmol = Chem.inchi.MolFromInchi(inchistr)
-            self.fromRDKitMol(rdkitmol)
-            return self
+            if backend.lower() == 'rdkit':
+                rdkitmol = Chem.inchi.MolFromInchi(inchistr, removeHs=False)
+                self.fromRDKitMol(rdkitmol)
+                return self
+            elif backend.lower() == 'openbabel':
+                obConversion = openbabel.OBConversion()
+                obConversion.SetInAndOutFormats("inchi", "smi")
+                obmol = openbabel.OBMol()
+                obConversion.ReadString(obmol, inchistr)
+                obmol.AddHydrogens()
+                obmol.AssignSpinMultiplicity(True)
+                self.fromOBMol(obmol)
+                return self
 
     def fromSMILES(self, smilesstr):
         """
         Convert a SMILES string `smilesstr` to a molecular structure. Uses
         `RDKit <http://rdkit.org/>`_ to perform the conversion.
         This Kekulizes everything, removing all aromatic atom types.
+    def fromSMILES(self, smilesstr, backend='rdkit'):
+        """
+        Convert a SMILES string `smilesstr` to a molecular structure. Uses 
+        a user-specified backend for conversion, currently supporting
+        rdkit (default) and openbabel.
         """
         # Special handling of helium
         if smilesstr == '[He]':
@@ -1204,12 +1220,23 @@ class Molecule(Graph):
             return self
         
         else:
-            rdkitmol = Chem.MolFromSmiles(smilesstr)
-            if rdkitmol is None:
-                raise ValueError("Could not interpret the SMILES string {0!r}".format(smilesstr))
-            self.fromRDKitMol(rdkitmol)
-            return self
-        
+            if backend.lower() == 'rdkit':
+                rdkitmol = Chem.MolFromSmiles(smilesstr)
+                if rdkitmol is None:
+                    raise ValueError("Could not interpret the SMILES string {0!r}".format(smilesstr))
+                self.fromRDKitMol(rdkitmol)
+                return self
+            elif backend.lower() == 'openbabel':
+                obConversion = openbabel.OBConversion()
+                obConversion.SetInAndOutFormats("smi", "smi")
+                obmol = openbabel.OBMol()
+                obConversion.ReadString(obmol, smilesstr)
+                obmol.AddHydrogens()
+                obmol.AssignSpinMultiplicity(True)
+                self.fromOBMol(obmol)
+                return self
+
+
     def fromSMARTS(self, smartsstr):
         """
         Convert a SMARTS string `smartsstr` to a molecular structure. Uses

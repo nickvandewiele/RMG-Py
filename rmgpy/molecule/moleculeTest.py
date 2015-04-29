@@ -834,6 +834,29 @@ class TestMolecule(unittest.TestCase):
         self.assertTrue(H.isHydrogen())
         self.assertEqual(H.radicalElectrons, 1)
 
+    def testFromSMILESRadicals(self):
+        """
+        Test that SMILES are correctly converted
+        to RMG Molecule objects.
+        """
+        # ethyl
+        smi = 'C[CH2]'
+        mol = Molecule().fromSMILES(smi)
+        mult = mol.multiplicity
+        self.assertEqual(mult, 2, smi)
+
+        # propyl
+        smi = 'CC[CH2]'
+        mol = Molecule().fromSMILES(smi)
+        mult = mol.multiplicity
+        self.assertEqual(mult, 2, smi)
+
+        # methyl
+        smi = '[CH3]'
+        mol = Molecule().fromSMILES(smi)
+        mult = mol.multiplicity
+        self.assertEqual(mult, 2, smi)
+
     def testFromInChIH(self):
         """
         Make sure that H radical is produced properly from its InChI
@@ -895,6 +918,77 @@ class TestMolecule(unittest.TestCase):
         for s in test_strings:
             molecule = Molecule(SMILES=s)
             self.assertEqual(s,molecule.toSMILES())
+
+    def testFromInChIRDKit_TwoCenter_Biradical(self):
+        """
+        Test that the inchi of a two-center biradical
+        is correctly converted to rdkit molecules.
+        """
+        from rdkit import Chem
+        from rdkit.Chem import Descriptors
+
+        # [CH2]C[CH2]
+        inchi = 'InChI=1S/C3H6/c1-3-2/h1-3H2'
+        rdkitmol = Chem.inchi.MolFromInchi(inchi)
+        numRad = Descriptors.NumRadicalElectrons(rdkitmol)
+        self.assertEqual(numRad, 2)
+        
+    def testFromInChIRDKit(self):
+        """
+        Test that inchis are correctly converted to rdkit molecules,
+        especially molecules with unpaired electrons.
+        """
+        from rdkit import Chem
+        from rdkit.Chem import Descriptors
+
+        # ethyl
+        inchi = 'InChI=1S/C2H5/c1-2/h1H2,2H3'
+        rdkitmol = Chem.inchi.MolFromInchi(inchi)
+        numRad = Descriptors.NumRadicalElectrons(rdkitmol)
+        self.assertEqual(numRad, 1, inchi)
+        
+        # propyl
+        inchi = 'InChI=1S/C3H7/c1-3-2/h1,3H2,2H3'
+        rdkitmol = Chem.inchi.MolFromInchi(inchi)
+        numRad = Descriptors.NumRadicalElectrons(rdkitmol)
+        self.assertEqual(numRad, 1, inchi)
+
+        # methyl
+        inchi = 'InChI=1S/CH3/h1H3'
+        rdkitmol = Chem.inchi.MolFromInchi(inchi)
+        numRad = Descriptors.NumRadicalElectrons(rdkitmol)
+        self.assertEqual(numRad, 1, inchi)
+
+        # methylene
+        inchi = 'InChI=1S/CH2/h1H2'
+        rdkitmol = Chem.inchi.MolFromInchi(inchi)
+        numRad = Descriptors.NumRadicalElectrons(rdkitmol)
+        self.assertEqual(numRad, 2, inchi)
+
+    def testFromInChIRadicals(self):
+        """
+        Test that inchis are correctly converted to RMG molecules,
+        especially molecules with unpaired electrons.
+        """
+        # ethyl
+        inchi = 'InChI=1S/C2H5/c1-2/h1H2,2H3'
+        mol = Molecule().fromInChI(inchi, backend='openbabel')
+        self.assertEqual(mol.getRadicalCount(), 1, inchi)
+        
+        # propyl
+        inchi = 'InChI=1S/C3H7/c1-3-2/h1,3H2,2H3'
+        mol = Molecule().fromInChI(inchi, backend='openbabel')
+        self.assertEqual(mol.getRadicalCount(), 1, inchi)
+
+        # methyl
+        inchi = 'InChI=1S/CH3/h1H3'
+        mol = Molecule().fromInChI(inchi, backend='openbabel')
+        self.assertEqual(mol.getRadicalCount(), 1, inchi)
+           
+        # methylene
+        inchi = 'InChI=1S/CH2/h1H2'
+        mol = Molecule().fromInChI(inchi, backend='openbabel')
+        self.assertEqual(mol.getRadicalCount(), 2, inchi)                 
 
     def testInChIKey(self):
         """

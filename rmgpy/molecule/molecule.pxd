@@ -168,9 +168,9 @@ cdef class Molecule(Graph):
 
     cpdef draw(self, str path)
 
-    cpdef fromInChI(self, str inchistr)
+    cpdef fromInChI(self, str inchistr, str backend=?)
 
-    cpdef fromSMILES(self, str smilesstr)
+    cpdef fromSMILES(self, str smilesstr, str backend=?)
 
     cpdef fromRDKitMol(self, rdkitmol)
 
