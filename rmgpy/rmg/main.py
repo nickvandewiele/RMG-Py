@@ -388,12 +388,12 @@ class RMG:
             # Seed mechanisms: add species and reactions from seed mechanism
             # DON'T generate any more reactions for the seed species at this time
             for seedMechanism in self.seedMechanisms:
-                self.reactionModel.addSeedMechanismToCore(seedMechanism, react=False)
+                self.reactionModel.addMechanism(seedMechanism, self.reactionModel.core, type_mech='seed mechanisms', react=False)
 
             # Reaction libraries: add species and reactions from reaction library to the edge so
             # that RMG can find them if their rates are large enough
             for library, option in self.reactionLibraries:
-                self.reactionModel.addReactionLibraryToEdge(library)
+                self.reactionModel.addMechanism(library, self.reactionModel.edge, type_mech = 'reaction libraries')
                 
             # Also always add in a few bath gases (since RMG-Java does)
             for label, smiles in [('Ar','[Ar]'), ('He','[He]'), ('Ne','[Ne]'), ('N2','N#N')]:

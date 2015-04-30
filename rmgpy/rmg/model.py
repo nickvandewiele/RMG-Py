@@ -1086,9 +1086,11 @@ class CoreEdgeReactionModel:
         necessary). This function also moves any reactions in the edge that gain
         core status as a result of this change in status to the core.
         If this are any such reactions, they are returned in a list.
+
+        spec: augmented inchi of the species to be added to the core.
         """
 
-        assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
+        assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec)
 
         # Add the species to the core
         self.core.species.append(spec)
@@ -1354,13 +1356,17 @@ class CoreEdgeReactionModel:
             rxnRate[j] = rxn.getRate(T, P, Ci)
         return rxnRate
 
-    def addSeedMechanismToCore(self, seedMechanism, react=False):
+    def addMechanism(self, mechanism, model, type_mech = 'seed mechanisms', react=False):
         """
-        Add all species and reactions from `seedMechanism`, a 
-        :class:`KineticsPrimaryDatabase` object, to the model core. If `react`
-        is ``True``, then reactions will also be generated between the seed
-        species. For large seed mechanisms this can be prohibitively expensive,
+        Add all species and reactions from `mechanism`(a seed mechanism
+        or a reaction library), a :class:`KineticsPrimaryDatabase` object, to the model, either
+        core or edge. If `react` is ``True``, then reactions will also be generated between the mechanism
+        species. For large mechanisms this can be prohibitively expensive,
         so it is not done by default.
+
+        type_mech: 'seed mechanisms' or 'reaction libraries'
+        mode: self.core or self.edge
+
         """
 
         if react: raise NotImplementedError("react=True doesn't work yet")
@@ -1368,119 +1374,68 @@ class CoreEdgeReactionModel:
         
         self.newReactionList = []; self.newSpeciesSet = Set()
 
-        numOldCoreSpecies = len(self.core.species)
-        numOldCoreReactions = len(self.core.reactions)
+        numOldCoreSpecies = len(model.species)
+        numOldCoreReactions = len(model.reactions)
 
-        logging.info('Adding seed mechanism {0} to model core...'.format(seedMechanism))
+        logging.info('Adding mechanism {0} to model...'.format(mechanism))
 
-        seedMechanism = database.kinetics.libraries[seedMechanism]
+        mechanism = database.kinetics.libraries[mechanism]
 
-        for entry in seedMechanism.entries.values():
+        for entry in mechanism.entries.values():
+            for species in itertools.chain(entry.item.reactants, entry.item.products):
+                self.makeNewSpecies(species)
+
             reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
             products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
-            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=seedMechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
+
+            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=mechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
             r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
         
         for spec in self.newSpeciesSet:
             if database.forbiddenStructures.isMoleculeForbidden(spec.molecule[0]):
-                if 'allowed' in self.speciesConstraints and 'seed mechanisms' in self.speciesConstraints['allowed']:
-                    logging.warning("Species {0} from seed mechanism {1} is globally forbidden.  It will behave as an inert unless found in a seed mechanism or reaction library.".format(spec.label, seedMechanism.label))
+                if 'allowed' in self.speciesConstraints and type_mech in self.speciesConstraints['allowed']:
+                    logging.warning("Species {0} from mechanism {1} is globally forbidden.  It will behave as an inert unless found in a seed mechanism or reaction library.".format(spec.label, mechanism.label))
                 else:
-                    raise ForbiddenStructureException("Species {0} from seed mechanism {1} is globally forbidden. You may explicitly allow it, but it will remain inert unless found in a seed mechanism or reaction library.".format(spec.label, seedMechanism.label))
+                    raise ForbiddenStructureException("Species {0} from mechanism {1} is globally forbidden. You may explicitly allow it, but it will remain inert unless found in a seed mechanism or reaction library.".format(spec.label, mechanism.label))
             if self.failsSpeciesConstraints(spec):
-                if 'allowed' in self.speciesConstraints and 'seed mechanisms' in self.speciesConstraints['allowed']:
+                if 'allowed' in self.speciesConstraintsand and type_mech in self.speciesConstraints['allowed']:
                     self.speciesConstraints['explicitlyAllowedMolecules'].extend(spec.molecule)
                 else:
-                    raise ForbiddenStructureException("Species constraints forbids species {0} from seed mechanism {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, seedMechanism.label))
+                    raise ForbiddenStructureException("Species constraints forbids species {0} from mechanism {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, mechanism.label))
 
         for spec in self.newSpeciesSet:            
             if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
             self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
             spec.generateTransportData(database)
-            self.addSpeciesToCore(spec)
+            if type_mech == 'seed mechanisms': 
+                self.addSpeciesToCore(spec)
+            else: 
+                self.addSpeciesToEdge(spec)
 
         for rxn in self.newReactionList:
             if self.pressureDependence and rxn.isUnimolecular():
                 # If this is going to be run through pressure dependence code,
                 # we need to make sure the barrier is positive.
                 # ...but are Seed Mechanisms run through PDep? Perhaps not.
-                for spec in itertools.chain(rxn.reactants, rxn.products):
-                    if spec.getAugmentedInChI().split('/', 1)[1] in self.thermoDict:
-                        spec.thermo = self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]]
-                    else:
-                        thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                        self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
-                rxn.fixBarrierHeight(forcePositive=True)
-            self.addReactionToCore(rxn)
+                if type_mech == 'seed mechanisms':
+                    rxn.fixBarrierHeight(forcePositive=True)
+                    self.addReactionToCore(rxn)
+                else:
+                    # Note that we haven't actually evaluated any fluxes at this point
+                    # Instead, we remove the comment below if the reaction is moved to
+                    # the core later in the mechanism generation
+                    self.addReactionToEdge(rxn)
         
         # Check we didn't introduce unmarked duplicates
         self.markChemkinDuplicates()
         
         self.printEnlargeSummary(
-            newCoreSpecies=self.core.species[numOldCoreSpecies:],
-            newCoreReactions=self.core.reactions[numOldCoreReactions:],
+            newCoreSpecies=model.species[numOldCoreSpecies:],
+            newCoreReactions=model.reactions[numOldCoreReactions:],
             newEdgeSpecies=[],
             newEdgeReactions=[],
-        )
-
-
-
-    def addReactionLibraryToEdge(self, reactionLibrary):
-        """
-        Add all species and reactions from `reactionLibrary`, a
-        :class:`KineticsPrimaryDatabase` object, to the model edge.
-        """
-
-        database = rmgpy.data.rmg.database
-
-        self.newReactionList = []
-        self.newSpeciesSet = Set()
-
-        numOldEdgeSpecies = len(self.edge.species)
-        numOldEdgeReactions = len(self.edge.reactions)
-
-        logging.info('Adding reaction library {0} to model edge...'.format(reactionLibrary))
-        reactionLibrary = database.kinetics.libraries[reactionLibrary]
-
-        for entry in reactionLibrary.entries.values():
-            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
-            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
-            rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=reactionLibrary, kinetics=entry.data, duplicate=entry.item.duplicate)
-            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
-            if not isNew: logging.info("This library reaction was not new: {0}".format(rxn))
-            
-        # Perform species constraints and forbidden species checks
-        for spec in self.newSpeciesSet:
-            if database.forbiddenStructures.isMoleculeForbidden(spec.molecule[0]):
-                if 'allowed' in self.speciesConstraints and 'reaction libraries' in self.speciesConstraints['allowed']:
-                    logging.warning("Species {0} from reaction library {1} is globally forbidden.  It will behave as an inert unless found in a seed mechanism or reaction library.".format(spec.label, reactionLibrary.label))
-                else:
-                    raise ForbiddenStructureException("Species {0} from reaction library {1} is globally forbidden. You may explicitly allow it, but it will remain inert unless found in a seed mechanism or reaction library.".format(spec.label, reactionLibrary.label))
-            if self.failsSpeciesConstraints(spec):
-                if 'allowed' in self.speciesConstraints and 'reaction libraries' in self.speciesConstraints['allowed']:
-                    self.speciesConstraints['explicitlyAllowedMolecules'].extend(spec.molecule)
-                else:
-                    raise ForbiddenStructureException("Species constraints forbids species {0} from reaction library {1}. Please reformulate constraints, remove the species, or explicitly allow it.".format(spec.label, reactionLibrary.label))
-       
-        for spec in self.newSpeciesSet:
-            if spec.reactive: thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-            self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
-            spec.generateTransportData(database)
-            self.addSpeciesToEdge(spec)
-
-        for rxn in self.newReactionList:
-            # Note that we haven't actually evaluated any fluxes at this point
-            # Instead, we remove the comment below if the reaction is moved to
-            # the core later in the mechanism generation
-            self.addReactionToEdge(rxn)
-
-        self.printEnlargeSummary(
-            newCoreSpecies=[],
-            newCoreReactions=[],
-            newEdgeSpecies=self.edge.species[numOldEdgeSpecies:],
-            newEdgeReactions=self.edge.reactions[numOldEdgeReactions:],
         )
 
     def addReactionLibraryToOutput(self, reactionLib):
