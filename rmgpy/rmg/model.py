@@ -579,12 +579,8 @@ class CoreEdgeReactionModel:
         The forward reaction is appended to self.newReactionList if it is new.
         """
 
-        # Determine the proper species objects for all reactants and products
-        reactants = [self.makeNewSpecies(reactant)[0] for reactant in forward.reactants]
-        products  = [self.makeNewSpecies(product)[0]  for product  in forward.products ]
-
-        forward.reactants = reactants
-        forward.products  = products
+        for species in itertools.chain(forward.reactants, forward.products):
+            self.makeNewSpecies(species)
 
         if checkExisting:
             found, rxn = self.checkForExistingReaction(forward)
@@ -1498,19 +1494,19 @@ class CoreEdgeReactionModel:
         reactionLibrary = database.kinetics.libraries[reactionLib]
 
         for entry in reactionLibrary.entries.values():
-            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
-            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
+            reactants, products = entry.item.reactants, entry.item.products
+
+            for species in itertools.chain(reactants, products):
+                self.makeNewSpecies(species)
+
+            reactants_ids = sorted([mol.toAugmentedInChI() for mol in reactants])
+            products_ids = sorted([mol.toAugmentedInChI() for mol in products])
             rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=reactionLibrary, kinetics=entry.data)
-            rxn.reactants = [self.makeNewSpecies(reactant)[0] for reactant in rxn.reactants]
-            rxn.products = [self.makeNewSpecies(product)[0] for product in rxn.products]
 
-            for species in rxn.reactants:
+            for species in itertools.chain(reactants, products):
                 if species not in self.core.species and species not in self.outputSpeciesList:
                     self.outputSpeciesList.append(species)
 
-            for species in rxn.products:
-                if species not in self.core.species and species not in self.outputSpeciesList:
-                    self.outputSpeciesList.append(species)
 
             # Reaction library was already on the edge, so we just need to get right label
             rxn = self.checkForExistingReaction(rxn)[1]
