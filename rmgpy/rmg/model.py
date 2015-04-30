@@ -434,8 +434,9 @@ class CoreEdgeReactionModel:
         """
         
         database = rmgpy.data.rmg.database
-        
-        if isinstance(object, rmgpy.species.Species):
+        if isinstance(object, str):#augmented inchi
+            molecule = Molecule().fromAugmentedInChI(object)
+        elif isinstance(object, rmgpy.species.Species):
             molecule = object.molecule[0]
             label = label if label != '' else object.label
             reactive = object.reactive
