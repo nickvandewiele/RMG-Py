@@ -475,11 +475,11 @@ class CoreEdgeReactionModel:
                 
                 spec.index = speciesIndex
                 spec.coreSizeAtCreation = len(self.core.species)
+                aug_inchi = spec.getAugmentedInChI().split('/', 1)[1]
                 if database:#only generate thermo if database is loaded
                     thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                    self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc
+                    self.thermoDict[aug_inchi] = thermo_spc
                 
-                aug_inchi = spec.getAugmentedInChI().split('/', 1)[1]
                 self.speciesDict[aug_inchi] = spec
 
                 # Since the species is new, add it to the list of new species
