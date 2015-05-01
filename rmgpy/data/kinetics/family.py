@@ -1538,13 +1538,7 @@ class KineticsFamily(Database):
             for atom_index, label in labels.iteritems():
                 molecule.atoms[atom_index].label = label
 
-        template = self.groups.getReactionTemplate(reactants)
-
-        #clear labels, as soon as we have the node match. 
-        for struct in itertools.chain(reaction.reactants, reaction.products):
-                for mol in struct.molecule: 
-                    mol.clearLabeledAtoms()
-    
+        template = self.groups.getReactionTemplate(reactants)    
     
         return template
     
