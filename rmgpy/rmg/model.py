@@ -1090,18 +1090,18 @@ class CoreEdgeReactionModel:
         """
 
         #Convert to augmented inchi of the species:
-        spec = spec.getAugmentedInChI().split('/', 1)[1]
-        assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec)
+        aug_inchi = spec.getAugmentedInChI().split('/', 1)[1]
+        assert aug_inchi not in self.core.species, "Tried to add species {0} to core, but it's already there".format(aug_inchi)
 
         # Add the species to the core
-        self.core.species.append(spec)
+        self.core.species.append(aug_inchi)
         
         rxnList = []
-        if spec in self.edge.species:
+        if aug_inchi in self.edge.species:
 
             # If species was in edge, remove it
-            logging.debug("Removing species {0} from edge.".format(spec))
-            self.edge.species.remove(spec)
+            logging.debug("Removing species {0} from edge.".format(aug_inchi))
+            self.edge.species.remove(aug_inchi)
 
             # Search edge for reactions that now contain only core species;
             # these belong in the model core and will be moved there
@@ -1123,7 +1123,9 @@ class CoreEdgeReactionModel:
         """
         Add a species `spec` to the reaction model edge.
         """
-        self.edge.species.append(spec)
+        #Convert to augmented inchi of the species:
+        aug_inchi = spec.getAugmentedInChI().split('/', 1)[1]
+        self.edge.species.append(aug_inchi)
 
     def prune(self, reactionSystems, toleranceKeepInEdge, maximumEdgeSpecies):
         """
