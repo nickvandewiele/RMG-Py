@@ -1208,8 +1208,8 @@ class KineticsFamily(Database):
                     labeledAtoms[i] = dict_i
                 
                 # Return the reactions as containing Species objects, not Molecule objects
-                reactants_ids = sorted([mol.toAugmentedInChI() for mol in reactants])
-                products_ids = sorted([mol.toAugmentedInChI() for mol in products])
+                reactants_ids = sorted([mol.getAugmentedInChI().split('/', 1)[1] for mol in reactants])
+                products_ids = sorted([mol.getAugmentedInChI().split('/', 1)[1] for mol in products])
                 
                 if reactants_ids == products_ids:
                     return None
@@ -1420,7 +1420,7 @@ class KineticsFamily(Database):
         else:#deflate the graphs of the products of reactions that are not a TemplateReaction:
             products = []
             for product in reaction.products:
-                products.append(product.toAugmentedInChI())
+                products.append(product.getAugmentedInChI().split('/', 1)[1])
 
         template = self.forwardTemplate
         rxnList = []

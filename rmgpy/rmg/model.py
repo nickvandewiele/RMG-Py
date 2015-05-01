@@ -417,7 +417,7 @@ class CoreEdgeReactionModel:
                         return True, spec
 
         # Return an existing species if a match is found
-        aug_inchi = molecule.toAugmentedInChI()
+        aug_inchi = molecule.getAugmentedInChI().split('/', 1)[1]
         if aug_inchi in self.speciesDict:
             spec = self.speciesDict[aug_inchi]
             self.speciesCache.pop()
@@ -1086,9 +1086,11 @@ class CoreEdgeReactionModel:
         core status as a result of this change in status to the core.
         If this are any such reactions, they are returned in a list.
 
-        spec: augmented inchi of the species to be added to the core.
+        spec: Species
         """
 
+        #Convert to augmented inchi of the species:
+        spec = spec.getAugmentedInChI().split('/', 1)[1]
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec)
 
         # Add the species to the core
@@ -1384,11 +1386,11 @@ class CoreEdgeReactionModel:
             for species in itertools.chain(entry.item.reactants, entry.item.products):
                 self.makeNewSpecies(species)
 
-            reactants_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.reactants])
-            products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
+            reactants_ids = sorted([spc.getAugmentedInChI().split('/', 1)[1] for spc in entry.item.reactants])
+            products_ids = sorted([spc.getAugmentedInChI().split('/', 1)[1] for spc in entry.item.products])
 
             rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=mechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
-            
+
             r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
@@ -1455,8 +1457,8 @@ class CoreEdgeReactionModel:
             for species in itertools.chain(reactants, products):
                 self.makeNewSpecies(species)
 
-            reactants_ids = sorted([mol.toAugmentedInChI() for mol in reactants])
-            products_ids = sorted([mol.toAugmentedInChI() for mol in products])
+            reactants_ids = sorted([spc.getAugmentedInChI().split('/', 1)[1] for spc in reactants])
+            products_ids = sorted([spc.getAugmentedInChI().split('/', 1)[1] for spc in products])
             rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=reactionLibrary, kinetics=entry.data)
 
             for species in itertools.chain(reactants, products):
