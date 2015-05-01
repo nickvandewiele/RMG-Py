@@ -1211,7 +1211,7 @@ class KineticsFamily(Database):
                 reactants_ids = sorted([mol.toAugmentedInChI() for mol in reactants])
                 products_ids = sorted([mol.toAugmentedInChI() for mol in products])
                 
-                if sorted(reactants_ids) == sorted(products_ids):
+                if reactants_ids == products_ids:
                     return None
 
                 # Create and return template reaction object
