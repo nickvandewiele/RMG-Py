@@ -580,9 +580,6 @@ class CoreEdgeReactionModel:
         The forward reaction is appended to self.newReactionList if it is new.
         """
 
-        for species in itertools.chain(forward.reactants, forward.products):
-            self.makeNewSpecies(species)
-
         if checkExisting:
             found, rxn = self.checkForExistingReaction(forward)
             if found: return rxn, False
@@ -833,6 +830,9 @@ class CoreEdgeReactionModel:
         Makes a reaction and decides where to put it: core, edge, or PDepNetwork.
         """
         for rxn in newReactions:
+            for species in itertools.chain(rxn.reactants, rxn.products):
+                self.makeNewSpecies(species)
+
             rxn, isNew = self.makeNewReaction(rxn)
             if isNew:
                 # We've made a new reaction, so make sure the species involved
@@ -1389,6 +1389,7 @@ class CoreEdgeReactionModel:
             products_ids = sorted([mol.toAugmentedInChI() for mol in entry.item.products])
 
             rxn = LibraryReaction(reactants=reactants_ids, products=products_ids, library=mechanism, kinetics=entry.data, duplicate=entry.item.duplicate)
+            
             r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesSet and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
