@@ -460,12 +460,11 @@ class CoreEdgeReactionModel:
                 spec.reactive = existing_spc.reactive
                 spec.coreSizeAtCreation = existing_spc.coreSizeAtCreation
                 #we assume that existing species will have their thermo stored in self.thermoDict
-                try:
-                    spec.thermo = self.thermoDict[existing_spc.getAugmentedInChI().split('/', 1)[1]]
-                except KeyError:
+                aug_inchi = existing_spc.getAugmentedInChI().split('/', 1)[1]
+                if not aug_inchi in self.thermoDict:
                     if database:#only generate thermo if database is loaded
                         thermo_spc = spec.generateThermoData(database, quantumMechanics=self.quantumMechanics)
-                        self.thermoDict[spec.getAugmentedInChI().split('/', 1)[1]] = thermo_spc#split on first occurrence of '/'
+                        self.thermoDict[aug_inchi] = thermo_spc#split on first occurrence of '/'
             else:
                 logging.debug('Creating new species {0}'.format(spec.label))
                 if reactive:
