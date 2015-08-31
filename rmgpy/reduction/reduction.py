@@ -26,7 +26,6 @@ from rmgpy.chemkin import getSpeciesIdentifier, loadChemkinFile
 from rmgpy.rmg.main import RMG
 from rmgpy.solver.base import TerminationTime, TerminationConversion
 from rmgpy.reduction.scoop_framework.workerwrapper import WorkerWrapper
-CLOSE_TO_ZERO = 1E-20
 
 class ReductionReaction(object):
     """
@@ -281,7 +280,7 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     return False
 
 
-
+CLOSE_TO_ZERO = 1E-20
 def isImportant(rxn, species_i, reactions, reactant_or_product, tolerance, T, P, coreSpeciesConcentrations):
     """
     This function computes:
