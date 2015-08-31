@@ -7,11 +7,11 @@ import re
 from collections import Counter
 import sys
 
-#local imports
-
 #global variables
 reactions = None
 
+
+#local imports
 try:
     from scoop import shared
     from scoop.futures import map as map_
@@ -25,14 +25,7 @@ except ImportError:
 from rmgpy.chemkin import getSpeciesIdentifier, loadChemkinFile
 from rmgpy.rmg.main import RMG
 from rmgpy.solver.base import TerminationTime, TerminationConversion
-from workerwrapper import WorkerWrapper
-"""
-Guidelines for input:
-
-- Do not use the annotated chemkin file as input!
-- 
-"""
-
+from rmgpy.reduction.scoop_framework.workerwrapper import WorkerWrapper
 CLOSE_TO_ZERO = 1E-20
 
 class ReductionReaction(object):
