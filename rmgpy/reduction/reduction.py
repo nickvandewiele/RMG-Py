@@ -605,7 +605,7 @@ def reduce_compute(tolerance, target_label, reactionModel, rmg, reaction_system_
     rmg.reactionModel.core.reactions = original_reactions
 
     logging.info('Conversion of reduced model ({} rxns): {:.2f}%'.format(no_important_reactions, conversion * 100))
-    return conversion
+    return conversion, important_reactions
 
 def optimize_tolerance(target_label, reactionModel, rmg, reaction_system_index, error, orig_conv):
     """
@@ -619,9 +619,12 @@ def optimize_tolerance(target_label, reactionModel, rmg, reaction_system_index, 
 
     tol = start
     trial = start
+
+    important_reactions = reactionModel.core.reactions
+    
     while True:
         logging.info('Trial tolerance: {trial:.2E}'.format(**locals()))
-        Xred = reduce_compute(trial, target_label, reactionModel, rmg, reaction_system_index)
+        Xred, new_important_reactions = reduce_compute(trial, target_label, reactionModel, rmg, reaction_system_index)
         dev = np.abs((Xred - orig_conv) / orig_conv)
         logging.info('Deviation: {dev:.2f}'.format(**locals()))
 
@@ -630,11 +633,12 @@ def optimize_tolerance(target_label, reactionModel, rmg, reaction_system_index, 
 
         tol = trial
         trial = trial * incr
+        important_reactions = new_important_reactions
 
     if tol == start:
         logging.error('Starting value for tolerance was too high...')
 
-    return tol
+    return tol, important_reactions
 
 class ConcentrationListener(object):
     """Returns the species concentration profiles at each time step."""
@@ -674,8 +678,12 @@ def main():
     print 'Original target conversion: {0:.0f}%'.format(Xorig * 100)
 
     # optimize reduction tolerance
-    tol = optimize_tolerance(target_label, reactionModel, rmg, index, error, Xorig)
+    tol, important_reactions = optimize_tolerance(target_label, reactionModel, rmg, index, error, Xorig)
     print 'Optimized tolerance: {:.0E}'.format(tol)
+
+    # plug the important reactions into the RMG object and write:
+    rmg.reactionModel.core.reactions = important_reactions
+    write_model(rmg)
 
 def loadReductionInput(reductionFile):
     """

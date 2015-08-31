@@ -66,7 +66,7 @@ class OptimizeTest(TestScoopCommon):
 
         tols = [0.7, 1e-3, 1e-6]
         for tol in tols:
-            conv = reduce_compute(tol, target_label, reactionModel, rmg, index)
+            conv, important_rxns = reduce_compute(tol, target_label, reactionModel, rmg, index)
             self.assertIsNotNone(conv)
 
     def test_optimize(self):
@@ -85,7 +85,7 @@ class OptimizeTest(TestScoopCommon):
          rmg.absoluteTolerance, rmg.relativeTolerance)
 
         # optimize reduction tolerance
-        tol = optimize_tolerance(target_label, reactionModel, rmg, index, error, Xorig)
+        tol, important_rxns = optimize_tolerance(target_label, reactionModel, rmg, index, error, Xorig)
         self.assertAlmostEqual(1e-04, tol)
 
 
