@@ -657,15 +657,15 @@ class ConcentrationListener(object):
 
 def main():
     
-    inputFile, reductionFile, chemkinFile = sys.argv[-3:]
+    inputFile, reductionFile, chemkinFile, spc_dict = sys.argv[-4:]
 
-    for f in [inputFile, reductionFile, chemkinFile]:
-        assert os.path.isfile(f)
+    for f in [inputFile, reductionFile, chemkinFile, spc_dict]:
+        assert os.path.isfile(f), 'Could not find {}'.format(f)
 
     inputDirectory = os.path.abspath(os.path.dirname(inputFile))
     output_directory = inputDirectory
 
-    rmg, target_label, error = load(inputFile, reductionFile, chemkinFile)
+    rmg, target_label, error = load(inputFile, reductionFile, chemkinFile, spc_dict)
 
     reactionModel = rmg.reactionModel
     initialize(rmg.outputDirectory, reactionModel.core.reactions)
@@ -728,9 +728,9 @@ def loadReductionInput(reductionFile):
 
     return target, tolerance
 
-def load(rmg_inputFile, reductionFile, chemkinFile):
+def load(rmg_inputFile, reductionFile, chemkinFile, speciesDict):
     
-    rmg = loadRMGPyJob(rmg_inputFile, chemkinFile)
+    rmg = loadRMGPyJob(rmg_inputFile, chemkinFile, speciesDict)
     target, tolerance = loadReductionInput(reductionFile)
 
     return rmg, target, tolerance
