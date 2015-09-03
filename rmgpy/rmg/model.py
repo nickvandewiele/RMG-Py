@@ -1049,27 +1049,50 @@ class CoreEdgeReactionModel:
         self.core.species.append(spec)
         
         rxnList = []
-        if spec in self.edge.species:
 
-            # If species was in edge, remove it
-            logging.debug("Removing species {0} from edge.".format(spec))
-            self.edge.species.remove(spec)
+        # convert to regular species:
+        if isinstance(spec, EdgeSpecies):
+            edge_spc = spec
+            spec = Species(
+             molecule=[Molecule().fromAugmentedInChI(spec.aug_inchi)],\
+             index = spec.index,\
+             label = spec.label,\
+             coreSizeAtCreation = spec.coreSizeAtCreation
+             )
 
-            # Search edge for reactions that now contain only core species;
-            # these belong in the model core and will be moved there
-            for rxn in self.edge.reactions:
-                allCore = True
-                for reactant in rxn.reactants:
-                    if reactant not in self.core.species: allCore = False
-                for product in rxn.products:
-                    if product not in self.core.species: allCore = False
-                if allCore: rxnList.append(rxn)
+            # Assuming that this species is already present in the speciesDict
+            spec, not_new = self.makeNewSpecies(spec)
+            assert not not_new
 
-            # Move any identified reactions to the core
-            for rxn in rxnList:
-                self.addReactionToCore(rxn)
-                logging.debug("Moving reaction from edge to core: {0}".format(rxn))
-        return rxnList
+            # Add the species to the core
+            self.core.species.append(spec)
+            
+
+            if edge_spc in self.edge.species:
+
+                # If species was in edge, remove it
+                logging.debug("Removing species {0} from edge.".format(spec))
+                self.edge.species.remove(edge_spc)
+
+                # Search edge for reactions that now contain only core species;
+                # these belong in the model core and will be moved there
+                for rxn in self.edge.reactions:
+                    allCore = True
+                    for reactant in rxn.reactants:
+                        if reactant not in self.core.species: allCore = False
+                    for product in rxn.products:
+                        if product not in self.core.species: allCore = False
+                    if allCore: rxnList.append(rxn)
+
+                # Move any identified reactions to the core
+                for rxn in rxnList:
+                    self.addReactionToCore(rxn)
+                    logging.debug("Moving reaction from edge to core: {0}".format(rxn))
+            else:
+                # Add the species to the core
+                self.core.species.append(spec)
+
+            return rxnList
 
     def addSpeciesToEdge(self, spec):
         """
@@ -1698,3 +1721,19 @@ class CoreEdgeReactionModel:
         if (struct.getNumberOfRadicalElectrons() > maxRadicals):
             return True
         return False
+
+class EdgeSpecies(object):
+    """docstring for EdgeSpecies"""
+    def __init__(self, spc):
+        super(EdgeSpecies, self).__init__()
+        assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
+        self.aug_inchi = spc.molecule[0].toAugmentedInChI()
+        self.index = spc.index
+        self.label = spc.label
+        self.coreSizeAtCreation = spc.coreSizeAtCreation
+
+    def __str__(self):
+        """
+        Return a string representation of the species, in the form 'label(id)'.
+        """
+        return '{0}({1:d}), {2}'.format(self.label, self.index, self.aug_inchi)
