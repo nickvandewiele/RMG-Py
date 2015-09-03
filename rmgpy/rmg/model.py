@@ -1045,9 +1045,6 @@ class CoreEdgeReactionModel:
 
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
 
-        # Add the species to the core
-        self.core.species.append(spec)
-        
         rxnList = []
 
         # convert to regular species:
@@ -1088,11 +1085,11 @@ class CoreEdgeReactionModel:
                 for rxn in rxnList:
                     self.addReactionToCore(rxn)
                     logging.debug("Moving reaction from edge to core: {0}".format(rxn))
-            else:
-                # Add the species to the core
-                self.core.species.append(spec)
+        else:
+            # Add the species to the core
+            self.core.species.append(spec)
 
-            return rxnList
+        return rxnList
 
     def addSpeciesToEdge(self, spec):
         """
