@@ -471,7 +471,7 @@ class RMG:
         memoryUse = []
 
         self.done = False
-        self.saveEverything()
+        # self.saveEverything()
         # Main RMG loop
         while not self.done:
                 
@@ -530,7 +530,7 @@ class RMG:
                 for objectToEnlarge in objectsToEnlarge:
                     self.reactionModel.enlarge(objectToEnlarge)
 
-            self.saveEverything()
+            # self.saveEverything()
 
             # Update RMG execution statistics
             logging.info('Updating RMG execution statistics...')
