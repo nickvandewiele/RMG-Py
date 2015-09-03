@@ -137,8 +137,8 @@ cdef class SimpleReactor(ReactionSystem):
         speciesIndex = {}
         for index, spec in enumerate(coreSpecies):
             speciesIndex[spec] = index
-        for index, spec in enumerate(edgeSpecies):
-            speciesIndex[spec] = index + numCoreSpecies
+        for index, edge_spec in enumerate(edgeSpecies):
+            speciesIndex[edge_spec.aug_inchi] = index + numCoreSpecies
         # Assign an index to each reaction (core first, then edge)
         reactionIndex = {}
         for index, rxn in enumerate(coreReactions):
@@ -220,10 +220,18 @@ cdef class SimpleReactor(ReactionSystem):
                     equilibriumConstants[j] = rxn.getEquilibriumConstant(T)
                     reverseRateCoefficients[j] = forwardRateCoefficients[j] / equilibriumConstants[j]
                 for l, spec in enumerate(rxn.reactants):
-                    i = speciesIndex[spec]
+                    try:
+                        i = speciesIndex[spec]
+                    except KeyError, e:
+                        aug_inchi = spec.molecule[0].toAugmentedInChI()
+                        i = speciesIndex[aug_inchi]
                     reactantIndices[j,l] = i
                 for l, spec in enumerate(rxn.products):
-                    i = speciesIndex[spec]
+                    try:
+                        i = speciesIndex[spec]
+                    except KeyError, e:
+                        aug_inchi = spec.molecule[0].toAugmentedInChI()
+                        i = speciesIndex[aug_inchi]
                     productIndices[j,l] = i
 
         networkIndices = -numpy.ones((numPdepNetworks, 3), numpy.int )
