@@ -1098,7 +1098,14 @@ class CoreEdgeReactionModel:
         """
         Add a species `spec` to the reaction model edge.
         """
-        self.edge.species.append(spec)
+        if isinstance(spec, EdgeSpecies):
+            self.edge.species.append(spec)
+            return
+
+        assert isinstance(spec, Species)
+        edge_spc = EdgeSpecies(spec)
+        self.edge.species.append(edge_spec)
+        
 
     def prune(self, reactionSystems, toleranceKeepInEdge, maximumEdgeSpecies):
         """
