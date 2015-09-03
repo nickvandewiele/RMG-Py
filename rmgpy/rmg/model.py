@@ -839,13 +839,29 @@ class CoreEdgeReactionModel:
                 for spec in rxn.reactants:
                     if spec not in self.core.species:
                         allSpeciesInCore = False
-                        if spec not in self.edge.species:
-                            self.addSpeciesToEdge(spec)
+                        edge_spec = EdgeSpecies(spec)
+                        
+                        found = False
+                        for spc in self.edge.species:
+                            if spc.aug_inchi == edge_spec.aug_inchi:
+                                found = True
+                                break
+                        
+                        if not found:
+                            self.addSpeciesToEdge(edge_spec)
                 for spec in rxn.products:
                     if spec not in self.core.species:
                         allSpeciesInCore = False
-                        if spec not in self.edge.species:
-                            self.addSpeciesToEdge(spec)
+                        edge_spec = EdgeSpecies(spec)
+                        
+                        found = False
+                        for spc in self.edge.species:
+                            if spc.aug_inchi == edge_spec.aug_inchi:
+                                found = True
+                                break
+
+                        if not found:
+                            self.addSpeciesToEdge(edge_spec)
             
             isomerAtoms = sum([len(spec.molecule[0].atoms) for spec in rxn.reactants])
             
