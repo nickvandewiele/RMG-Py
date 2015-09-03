@@ -45,6 +45,7 @@ import rmgpy.species
 from rmgpy.thermo import Wilhoit, NASA, ThermoData
 from rmgpy.pdep import SingleExponentialDown
 from rmgpy.statmech import  Conformer
+from rmgpy.molecule.molecule import Molecule
 
 from rmgpy.data.base import ForbiddenStructureException
 from rmgpy.data.kinetics.depository import DepositoryReaction
@@ -680,13 +681,23 @@ class CoreEdgeReactionModel:
             self.newReactionList = []; self.newSpeciesList = []
             newReactions = []
             pdepNetwork = None
-            objectWasInEdge = False
         
-            if isinstance(obj, Species):
+            if isinstance(obj, (Species, EdgeSpecies)):
 
                 newSpecies = obj
-                objectWasInEdge = newSpecies in self.edge.species
-                
+
+                if isinstance(obj, EdgeSpecies):
+                    newSpecies = Species(
+                     molecule=[Molecule().fromAugmentedInChI(newSpecies.aug_inchi)],\
+                     index = newSpecies.index,\
+                     label = newSpecies.label,\
+                     coreSizeAtCreation = newSpecies.coreSizeAtCreation
+                     )
+
+                    # Assuming that this species is already present in the speciesDict
+                    newSpecies, not_new = self.makeNewSpecies(newSpecies)
+                    assert not not_new
+
                 if not newSpecies.reactive:
                     logging.info('NOT generating reactions for unreactive species {0}'.format(newSpecies))
                 else:
@@ -743,7 +754,7 @@ class CoreEdgeReactionModel:
                     else:
                         index += 1
             
-            if isinstance(obj, Species) and objectWasInEdge:
+            if isinstance(obj, EdgeSpecies):
                 # moved one species from edge to core
                 numOldEdgeSpecies -= 1
                 # moved these reactions from edge to core
