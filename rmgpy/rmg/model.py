@@ -1747,7 +1747,7 @@ class EdgeSpecies(object):
     def __init__(self, spc):
         super(EdgeSpecies, self).__init__()
         assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
-        self.aug_inchi = spc.molecule[0].toAugmentedInChI()
+        self.aug_inchi = self.generate_aug_inchi(spc)
         self.index = spc.index
         self.label = spc.label
         self.coreSizeAtCreation = spc.coreSizeAtCreation
@@ -1757,3 +1757,13 @@ class EdgeSpecies(object):
         Return a string representation of the species, in the form 'label(id)'.
         """
         return '{0}({1:d}), {2}'.format(self.label, self.index, self.aug_inchi)
+
+    def generate_aug_inchi(self, spc):
+        candidates = []
+        spc.generateResonanceIsomers()
+        for mol in spc.molecule:
+            cand = mol.toAugmentedInChI()
+            candidates.append(cand)
+
+        candidates.sort()
+        return candidates[0]
