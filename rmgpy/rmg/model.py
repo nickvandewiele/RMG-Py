@@ -1074,29 +1074,18 @@ class CoreEdgeReactionModel:
 
         rxnList = []
 
-        # convert to regular species:
-        if isinstance(spec, EdgeSpecies):
-            edge_spc = spec
-            spec = Species(
-             molecule=[Molecule().fromAugmentedInChI(spec.aug_inchi)],\
-             index = spec.index,\
-             label = spec.label,\
-             coreSizeAtCreation = spec.coreSizeAtCreation
-             )
 
-            # Assuming that this species is already present in the speciesDict
-            spec, not_new = self.makeNewSpecies(spec)
-            assert not not_new
+        # Add the species to the core
+        self.core.species.append(spec)
+        
+        # convert spec to edge species and move reactions from core to edge:
+        aug_inchi = EdgeSpecies(spec).aug_inchi
 
-            # Add the species to the core
-            self.core.species.append(spec)
-            
-
-            if edge_spc in self.edge.species:
-
+        for spc in self.edge.species:
+            if spc.aug_inchi == aug_inchi:
                 # If species was in edge, remove it
                 logging.debug("Removing species {0} from edge.".format(spec))
-                self.edge.species.remove(edge_spc)
+                self.edge.species.remove(spc)
 
                 # Search edge for reactions that now contain only core species;
                 # these belong in the model core and will be moved there
@@ -1112,9 +1101,9 @@ class CoreEdgeReactionModel:
                 for rxn in rxnList:
                     self.addReactionToCore(rxn)
                     logging.debug("Moving reaction from edge to core: {0}".format(rxn))
-        else:
-            # Add the species to the core
-            self.core.species.append(spec)
+
+                break
+
 
         return rxnList
 
