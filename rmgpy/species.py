@@ -84,6 +84,7 @@ class Species(object):
     `energyTransferModel`   The collisional energy transfer model to use
     `reactive`              ``True`` if the species participates in reactions, ``False`` if not
     'props'                 A generic 'properties' dictionary to store user-defined flags
+    `aug_inchi`             Unique augmented inchi
     ======================= ====================================================
 
     note: :class:`rmg.model.Species` inherits from this class, and adds some extra methods.
@@ -92,7 +93,7 @@ class Species(object):
     def __init__(self, index=-1, label='', thermo=None, conformer=None, 
                  molecule=None, transportData=None, molecularWeight=None, 
                  dipoleMoment=None, polarizability=None, Zrot=None, 
-                 energyTransferModel=None, reactive=True, props=None):
+                 energyTransferModel=None, reactive=True, props=None, aug_inchi=None):
         self.index = index
         self.label = label
         self.thermo = thermo
@@ -106,6 +107,7 @@ class Species(object):
         self.Zrot = Zrot
         self.energyTransferModel = energyTransferModel        
         self.props = props or {}
+        self.aug_inchi = aug_inchi
         
         # Check multiplicity of each molecule is the same
         if molecule is not None and len(molecule)>1:
@@ -155,7 +157,7 @@ class Species(object):
         """
         A helper function used when pickling an object.
         """
-        return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.props))
+        return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.dipoleMoment, self.polarizability, self.Zrot, self.energyTransferModel, self.reactive, self.props, self.aug_inchi))
 
     def getMolecularWeight(self):
         return self._molecularWeight
@@ -373,6 +375,23 @@ class Species(object):
         Return the value of the heat capacity at infinite temperature in J/mol*K.
         """
         return self.molecule[0].calculateCpInf()
+
+    def getAugmentedInChI(self):
+        if self.aug_inchi is None:
+            self.aug_inchi = self.generate_aug_inchi()
+            return self.aug_inchi
+        else:
+            return self.aug_inchi
+
+    def generate_aug_inchi(self):
+        candidates = []
+        self.generateResonanceIsomers()
+        for mol in self.molecule:
+            cand = mol.toAugmentedInChI()
+            candidates.append(cand)
+
+        candidates.sort()
+        return candidates[0]
 
 ################################################################################
 

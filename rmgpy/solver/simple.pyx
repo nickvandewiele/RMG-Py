@@ -223,14 +223,14 @@ cdef class SimpleReactor(ReactionSystem):
                     try:
                         i = speciesIndex[spec]
                     except KeyError, e:
-                        aug_inchi = spec.molecule[0].toAugmentedInChI()
+                        aug_inchi = spec.getAugmentedInChI()
                         i = speciesIndex[aug_inchi]
                     reactantIndices[j,l] = i
                 for l, spec in enumerate(rxn.products):
                     try:
                         i = speciesIndex[spec]
                     except KeyError, e:
-                        aug_inchi = spec.molecule[0].toAugmentedInChI()
+                        aug_inchi = spec.getAugmentedInChI()
                         i = speciesIndex[aug_inchi]
                     productIndices[j,l] = i
 
