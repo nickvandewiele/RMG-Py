@@ -59,10 +59,10 @@ def processThermoData(spc, thermo0, thermoClass=NASA):
     wilhoit.comment = thermo0.comment
 
     # Add on solvation correction
-    if LiquidModel.solventData and not "Liquid thermo library" in thermo0.comment:
-        #logging.info("Making solvent correction for {0}".format(LiquidModel.solventName))
-        soluteData = solvationdatabase.getSoluteData(spc)
-        solvation_correction = solvationdatabase.getSolvationCorrection(soluteData, LiquidModel.solventData)
+    if Species.solventData and not "Liquid thermo library" in thermo0.comment:
+        #logging.info("Making solvent correction for {0}".format(Species.solventName))
+        soluteData = database.solvation.getSoluteData(spc)
+        solvation_correction = database.solvation.getSolvationCorrection(soluteData, Species.solventData)
         # correction is added to the entropy and enthalpy
         wilhoit.S0.value_si = (wilhoit.S0.value_si + solvation_correction.entropy)
         wilhoit.H0.value_si = (wilhoit.H0.value_si + solvation_correction.enthalpy)
@@ -76,7 +76,7 @@ def processThermoData(spc, thermo0, thermoClass=NASA):
     if thermoClass is Wilhoit:
         spc.thermo = wilhoit
     elif thermoClass is NASA:
-        if LiquidModel.solventData:
+        if Species.solventData:
             #if liquid phase simulation keep the nasa polynomial if it comes from a liquid phase thermoLibrary. Otherwise convert wilhoit to NASA
             if "Liquid thermo library" in thermo0.comment and isinstance(thermo0, NASA):
                 spc.thermo = thermo0
@@ -107,7 +107,7 @@ def processThermoData(spc, thermo0, thermoClass=NASA):
     return spc.thermo
     
 
-def generateThermoData(spc, thermoClass=NASA):
+def generateThermoData(spc, thermoClass=NASA, quantumMechanics=None):
     """
     Generates thermo data, first checking Libraries, then using either QM or Database.
     
@@ -125,115 +125,8 @@ def generateThermoData(spc, thermoClass=NASA):
     
 
     database = rmgpy.data.rmg.database
-    quantumMechanics = None #rmg.quantumMechanics TODO this should be reset for production purposes
-
-    thermo0 = None
-    
-    thermodatabase = database.thermo
-    assert thermodatabase is not None
-
-    thermo0 = thermodatabase.getThermoDataFromLibraries(spc)
-    
-    if thermo0 is not None:
-        logging.info("Found thermo for {0} in {1}".format(spc.label,thermo0[0].comment.lower()))
-        assert len(thermo0) == 3, "thermo0 should be a tuple at this point: (thermoData, library, entry)"
-        thermo0 = thermo0[0]
+    thermo0 = database.thermo.getThermoData(spc, trainingSet=None, quantumMechanics=quantumMechanics) 
         
-    elif quantumMechanics:
-        original_molecule = spc.molecule[0]
-        if quantumMechanics.settings.onlyCyclics and not original_molecule.isCyclic():
-            pass
-        else: # try a QM calculation
-            if original_molecule.getRadicalCount() > quantumMechanics.settings.maxRadicalNumber:
-                # Too many radicals for direct calculation: use HBI.
-                logging.info("{0} radicals on {1} exceeds limit of {2}. Using HBI method.".format(
-                    original_molecule.getRadicalCount(),
-                    spc.label,
-                    quantumMechanics.settings.maxRadicalNumber,
-                    ))
-                
-                # Need to estimate thermo via each resonance isomer
-                thermo = []
-                for molecule in spc.molecule:
-                    molecule.clearLabeledAtoms()
-                    # Try to see if the saturated molecule can be found in the libraries
-                    tdata = thermodatabase.estimateRadicalThermoViaHBI(molecule, thermodatabase.getThermoDataFromLibraries)
-                    priority = 1
-                    if tdata is None:
-                        # Then attempt quantum mechanics job on the saturated molecule
-                        tdata = thermodatabase.estimateRadicalThermoViaHBI(molecule, quantumMechanics.getThermoData)
-                        priority = 2
-                    if tdata is None:
-                        # Fall back to group additivity
-                        tdata = thermodatabase.estimateThermoViaGroupAdditivity(molecule)
-                        priority = 3
-                    
-                    thermo.append((priority, tdata.getEnthalpy(298.), molecule, tdata))
-                
-                if len(thermo) > 1:
-                    # Sort thermo first by the priority, then by the most stable H298 value
-                    thermo = sorted(thermo, key=lambda x: (x[0], x[1])) 
-                    # Save resonance isomers reordered by their thermo
-                    spc.molecule = [item[2] for item in thermo]
-                    original_molecule = spc.molecule[0]
-                thermo0 = thermo[0][3] 
-                
-                # If priority == 2
-                if thermo[0][0] == 2:
-                    # Write the QM molecule thermo to a library so that can be used in future RMG jobs.  (Do this only if it came from a QM calculation)
-                    quantumMechanics.database.loadEntry(index = len(quantumMechanics.database.entries) + 1,
-                                                    label = original_molecule.toSMILES() + '_({0})'.format(_multiplicity_labels[original_molecule.multiplicity]),
-                                                    molecule = original_molecule.toAdjacencyList(),
-                                                    thermo = thermo0,
-                                                    shortDesc = thermo0.comment
-                                                    
-                                                    )                    
-#                    # For writing thermodata HBI check for QM molecules
-#                    with open('thermoHBIcheck.txt','a') as f:
-#                        f.write('// {0!r}\n'.format(thermo0).replace('),','),\n//           '))
-#                        f.write('{0}\n'.format(original_molecule.toSMILES()))
-#                        f.write('{0}\n\n'.format(original_molecule.toAdjacencyList(removeH=False)))
-
-            else: # Not too many radicals: do a direct calculation.
-                thermo0 = quantumMechanics.getThermoData(original_molecule) # returns None if it fails
-            
-                if thermo0 is not None:
-                    # Write the QM molecule thermo to a library so that can be used in future RMG jobs.
-                    quantumMechanics.database.loadEntry(index = len(quantumMechanics.database.entries) + 1,
-                                                    label = original_molecule.toSMILES() + '_({0})'.format(_multiplicity_labels[original_molecule.multiplicity]),
-                                                    molecule = original_molecule.toAdjacencyList(),
-                                                    thermo = thermo0,
-                                                    shortDesc = thermo0.comment
-                                                    )                    
-    if thermo0 is None:
-        # Use group additivity methods to determine thermo for molecule (or if QM fails completely)
-        original_molecule = spc.molecule[0]
-        if original_molecule.getRadicalCount() > 0:
-            # Molecule is a radical, use the HBI method
-            thermo = []
-            for molecule in spc.molecule:
-                molecule.clearLabeledAtoms()
-                # First see if the saturated molecule is in the libaries
-                tdata = thermodatabase.estimateRadicalThermoViaHBI(molecule, thermodatabase.getThermoDataFromLibraries)
-                priority = 1
-                if tdata is None:
-                    # Otherwise use normal group additivity to obtain the thermo for the molecule
-                    tdata = thermodatabase.estimateThermoViaGroupAdditivity(molecule)
-                    priority = 2
-                thermo.append((priority, tdata.getEnthalpy(298.), molecule, tdata))
-            
-            if len(thermo) > 1:
-                # Sort thermo first by the priority, then by the most stable H298 value
-                thermo = sorted(thermo, key=lambda x: (x[0], x[1]))
-                # Save resonance isomers reordered by their thermo
-                #spc.molecule = [item[2] for item in thermo]
-            thermo0 = thermo[0][3] 
-        else:
-            # Saturated molecule, does not need HBI method
-            thermo0 = thermodatabase.getThermoDataFromGroups(spc)
-            
-        # Make sure to calculate Cp0 and CpInf if it wasn't done already
-        thermodatabase.findCp0andCpInf(spc, thermo0)
     return processThermoData(spc, thermo0, thermoClass)
 
 
