@@ -57,6 +57,8 @@ from rmgpy.pdep.reaction import calculateMicrocanonicalRateCoefficient
 
 from rmgpy.kinetics.diffusionLimited import diffusionLimiter
 
+import rmgpy.thermo.thermoengine
+
 ################################################################################
 
 class ReactionError(Exception):
@@ -433,10 +435,11 @@ class Reaction:
         """
         cython.declare(dHrxn=cython.double, reactant=Species, product=Species)
         dHrxn = 0.0
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dHrxn -= reactant.getEnthalpy(T)
+            dHrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getEnthalpy(T)
         for product in self.products:
-            dHrxn += product.getEnthalpy(T)
+            dHrxn += thermo_engine.get_data(product.getAugmentedInChI()).getEnthalpy(T)
         return dHrxn
 
     def getEntropyOfReaction(self, T):
@@ -446,10 +449,11 @@ class Reaction:
         """
         cython.declare(dSrxn=cython.double, reactant=Species, product=Species)
         dSrxn = 0.0
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dSrxn -= reactant.getEntropy(T)
+            dSrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getEntropy(T)
         for product in self.products:
-            dSrxn += product.getEntropy(T)
+            dSrxn += thermo_engine.get_data(product.getAugmentedInChI()).getEntropy(T)
         return dSrxn
 
     def getFreeEnergyOfReaction(self, T):
@@ -459,10 +463,11 @@ class Reaction:
         """
         cython.declare(dGrxn=cython.double, reactant=Species, product=Species)
         dGrxn = 0.0
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dGrxn -= reactant.getFreeEnergy(T)
+            dGrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getFreeEnergy(T)
         for product in self.products:
-            dGrxn += product.getFreeEnergy(T)
+            dGrxn += thermo_engine.get_data(product.getAugmentedInChI()).getFreeEnergy(T)
         return dGrxn
 
     def getEquilibriumConstant(self, T, type='Kc'):
