@@ -281,9 +281,6 @@ class RMG:
             #frequenciesLibraries = self.statmechLibraries,
             depository = False, # Don't bother loading the depository information, as we don't use it
         )
-        
-        # start the thermo engine:
-        rmgpy.thermo.thermoengine.init()
 
         #check libraries
         self.checkLibraries()
@@ -327,7 +324,10 @@ class RMG:
             if not os.path.exists(os.path.join(self.outputDirectory,'restart.pkl')):
                 logging.error("Could not find restart file (restart.pkl). Please run without --restart option.")
                 raise Exception("No restart file")
-            
+        
+        # start the thermo engine:
+        rmgpy.thermo.thermoengine.init()
+
         # Read input file
         self.loadInput(args.file[0])
         
