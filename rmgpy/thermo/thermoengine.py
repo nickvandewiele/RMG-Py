@@ -35,9 +35,9 @@ def processThermoData(spc, thermo0, thermoClass=NASA):
     """
     Converts via Wilhoit into required `thermoClass` and sets `E0`.
     
-    Resulting thermo is stored (`spc.thermo`) and returned.
+    Resulting thermo is returned.
     """
-
+    thermo = None
     database = rmgpy.data.rmg.database
     solvationdatabase = database.solvation
 
@@ -74,37 +74,37 @@ def processThermoData(spc, thermo0, thermoClass=NASA):
     
     # Convert to desired thermo class
     if thermoClass is Wilhoit:
-        spc.thermo = wilhoit
+        thermo = wilhoit
     elif thermoClass is NASA:
         if Species.solventData:
             #if liquid phase simulation keep the nasa polynomial if it comes from a liquid phase thermoLibrary. Otherwise convert wilhoit to NASA
             if "Liquid thermo library" in thermo0.comment and isinstance(thermo0, NASA):
-                spc.thermo = thermo0
-                if spc.thermo.E0 is None:
-                    spc.thermo.E0 = wilhoit.E0
+                thermo = thermo0
+                if thermo.E0 is None:
+                    thermo.E0 = wilhoit.E0
             else:
-                spc.thermo = wilhoit.toNASA(Tmin=100.0, Tmax=5000.0, Tint=1000.0)
+                thermo = wilhoit.toNASA(Tmin=100.0, Tmax=5000.0, Tint=1000.0)
         else: 
             #gas phase with species matching thermo library keep the NASA from library or convert if group additivity
             if "Thermo library" in thermo0.comment and isinstance(thermo0,NASA):
-                spc.thermo=thermo0
-                if spc.thermo.E0 is None:
-                    spc.thermo.E0 = wilhoit.E0
+                thermo=thermo0
+                if thermo.E0 is None:
+                    thermo.E0 = wilhoit.E0
             else:
-                spc.thermo = wilhoit.toNASA(Tmin=100.0, Tmax=5000.0, Tint=1000.0)
+                thermo = wilhoit.toNASA(Tmin=100.0, Tmax=5000.0, Tint=1000.0)
     else:
         raise Exception('thermoClass neither NASA nor Wilhoit.  Cannot process thermo data.')
     
-    if spc.thermo.__class__ != thermo0.__class__:
+    if thermo.__class__ != thermo0.__class__:
         # Compute RMS error of overall transformation
         Tlist = numpy.array([300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1500.0], numpy.float64)
         err = 0.0
         for T in Tlist:
-            err += (spc.thermo.getHeatCapacity(T) - thermo0.getHeatCapacity(T))**2
+            err += (thermo.getHeatCapacity(T) - thermo0.getHeatCapacity(T))**2
         err = math.sqrt(err/len(Tlist))/constants.R
         # logging.log(logging.WARNING if err > 0.2 else 0, 'Average RMS error in heat capacity fit to {0} = {1:g}*R'.format(spc, err))
 
-    return spc.thermo
+    return thermo
     
 
 def generateThermoData(spc, thermoClass=NASA, quantumMechanics=None):
