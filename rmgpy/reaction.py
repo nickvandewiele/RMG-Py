@@ -437,9 +437,9 @@ class Reaction:
         dHrxn = 0.0
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dHrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getEnthalpy(T)
+            dHrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getEnthalpy(T)
         for product in self.products:
-            dHrxn += thermo_engine.get_data(product.getAugmentedInChI()).getEnthalpy(T)
+            dHrxn += thermo_engine.get_thermo(product.getAugmentedInChI()).getEnthalpy(T)
         return dHrxn
 
     def getEntropyOfReaction(self, T):
@@ -451,9 +451,9 @@ class Reaction:
         dSrxn = 0.0
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dSrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getEntropy(T)
+            dSrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getEntropy(T)
         for product in self.products:
-            dSrxn += thermo_engine.get_data(product.getAugmentedInChI()).getEntropy(T)
+            dSrxn += thermo_engine.get_thermo(product.getAugmentedInChI()).getEntropy(T)
         return dSrxn
 
     def getFreeEnergyOfReaction(self, T):
@@ -465,9 +465,9 @@ class Reaction:
         dGrxn = 0.0
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
-            dGrxn -= thermo_engine.get_data(reactant.getAugmentedInChI()).getFreeEnergy(T)
+            dGrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getFreeEnergy(T)
         for product in self.products:
-            dGrxn += thermo_engine.get_data(product.getAugmentedInChI()).getFreeEnergy(T)
+            dGrxn += thermo_engine.get_thermo(product.getAugmentedInChI()).getFreeEnergy(T)
         return dGrxn
 
     def getEquilibriumConstant(self, T, type='Kc'):
