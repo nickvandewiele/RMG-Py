@@ -57,8 +57,6 @@ from rmgpy.pdep.reaction import calculateMicrocanonicalRateCoefficient
 
 from rmgpy.kinetics.diffusionLimited import diffusionLimiter
 
-import rmgpy.thermo.thermoengine
-
 ################################################################################
 
 class ReactionError(Exception):
@@ -435,6 +433,7 @@ class Reaction:
         """
         cython.declare(dHrxn=cython.double, reactant=Species, product=Species)
         dHrxn = 0.0
+        import rmgpy.thermo.thermoengine
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
             dHrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getEnthalpy(T)
@@ -449,6 +448,7 @@ class Reaction:
         """
         cython.declare(dSrxn=cython.double, reactant=Species, product=Species)
         dSrxn = 0.0
+        import rmgpy.thermo.thermoengine
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
             dSrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getEntropy(T)
@@ -463,6 +463,7 @@ class Reaction:
         """
         cython.declare(dGrxn=cython.double, reactant=Species, product=Species)
         dGrxn = 0.0
+        import rmgpy.thermo.thermoengine
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         for reactant in self.reactants:
             dGrxn -= thermo_engine.get_thermo(reactant.getAugmentedInChI()).getFreeEnergy(T)
@@ -584,6 +585,7 @@ class Reaction:
         """
         cython.declare(H0=cython.double, H298=cython.double, Ea=cython.double)
 
+        import rmgpy.thermo.thermoengine
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
 
         H298 = self.getEnthalpyOfReaction(298)
