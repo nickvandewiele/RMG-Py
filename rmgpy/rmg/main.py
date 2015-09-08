@@ -57,6 +57,7 @@ from rmgpy.kinetics.diffusionLimited import diffusionLimiter
 
 from model import Species, CoreEdgeReactionModel
 from pdep import PDepNetwork
+import rmgpy.thermo.thermoengine
 
 ################################################################################
 
@@ -281,6 +282,9 @@ class RMG:
             depository = False, # Don't bother loading the depository information, as we don't use it
         )
         
+        # start the thermo engine:
+        rmgpy.thermo.thermoengine.init()
+
         #check libraries
         self.checkLibraries()
         
