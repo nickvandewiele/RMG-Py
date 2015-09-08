@@ -58,6 +58,7 @@ from rmgpy.kinetics.diffusionLimited import diffusionLimiter
 
 from model import Species, CoreEdgeReactionModel
 from pdep import PDepNetwork
+
 import rmgpy.util as util
 
 from rmgpy.chemkin import ChemkinWriter
@@ -66,6 +67,9 @@ from rmgpy.restart import RestartWriter
 from rmgpy.qm.main import QMDatabaseWriter
 from rmgpy.stats import ExecutionStatsWriter
 from rmgpy.tools.sensitivity import SimulationProfileWriter
+
+import rmgpy.thermo.thermoengine as thermoengine
+
 
 ################################################################################
 
@@ -296,7 +300,7 @@ class RMG(util.Subject):
             #frequenciesLibraries = self.statmechLibraries,
             depository = False, # Don't bother loading the depository information, as we don't use it
         )
-        
+
         #check libraries
         self.checkLibraries()
         
@@ -347,7 +351,10 @@ class RMG(util.Subject):
             if not os.path.exists(os.path.join(self.outputDirectory,'restart.pkl')):
                 logging.error("Could not find restart file (restart.pkl). Please run without --restart option.")
                 raise Exception("No restart file")
-            
+        
+        # start the thermo engine:
+        thermoengine.init()
+
         # Read input file
         self.loadInput(inputFile)
 
