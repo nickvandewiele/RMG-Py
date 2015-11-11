@@ -620,8 +620,7 @@ class CoreEdgeReactionModel:
                 if isinstance(obj, InChISpecies):
                     newSpecies = Species(
                      molecule=[Molecule().fromAugmentedInChI(newSpecies.getAugmentedInChI())],\
-                     index = newSpecies.index,\
-                     label = newSpecies.label,\
+                     index = newSpecies.index,
                      )
 
                     # Assuming that this species is already present in the speciesDict
@@ -1659,15 +1658,13 @@ class InChISpecies(object):
         assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
         self.aug_inchi = spc.getAugmentedInChI()
         self.index = spc.index
-        self.label = spc.label
         self.coreSizeAtCreation = -1
 
     def __str__(self):
         """
         Return a string representation of the species, in the form 'label(id)'.
         """
-        if self.index == -1: return self.label
-        else: return '{0}({1:d})'.format(self.label, self.index)
+        return '{}'.format(self.aug_inchi)
 
     def getAugmentedInChI(self):
         return self.aug_inchi
