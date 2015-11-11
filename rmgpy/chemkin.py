@@ -53,6 +53,8 @@ from rmgpy.rmg.pdep import PDepNetwork
 from rmgpy.molecule import Molecule
 from rmgpy.transport import TransportData
 
+import rmgpy.labelgenerator as labelgenerator
+
 __chemkin_reaction_count = None
     
 from rmgpy.util import makeOutputSubdirectory
@@ -1274,62 +1276,20 @@ def getSpeciesIdentifier(species):
     species identifier, this function uses a maximum of 10 to ensure that all
     reaction equations fit in the maximum limit of 52 characters.
     """
-    label = species.label
-    # Special case for inert colliders - just use the label if possible
-    if hasattr(species, 'reactive'):
-        if not species.reactive and 0 < len(label) <= 10:
-            return label
 
-    # The algorithm is slightly different depending on whether or not the
-    # species has an index
-    # If so, we want to include the index in the identifier
-    if species.index == -1:
-        # No index present -- probably not in RMG job
-        # In this case just return the label (if the right size)
-        if len(label) > 0 and not re.search(r'[^A-Za-z0-9\-_,\(\)\*#]+', label):
-            if len(label) <= 10:
-                return label
-            elif len(label) <= 15:
-                #logging.warning('Species label {0} is longer than 10 characters and may exceed chemkin string limit'.format(label))
-                return label            
-            else:
-                logging.warning('Species label is longer than 15 characters and will break CHEMKIN 2.0')
-                return label
-        else:
-            # try the chemical formula if the species label is not present
-            # Try the chemical formula
-            aug_inchi = species.getAugmentedInChI()
-            formula = aug_inchi.split('/')[1]
-            return '{0}'.format(formula)
+    kwargs = {
+        'index':species.index,
+    }
+
+    if isinstance(species, InChISpecies):
+        kwargs['id'] = species.getAugmentedInChI()
     else:
-        
-        # Index present - the index will be included in the identifier
-        # (at the expense of the current label or formula if need be)
+        kwargs['species'] = species
+        kwargs['user'] = species.label
+        kwargs['reactive'] = species.reactive
 
-        # First try to use the label and index
-        # The label can only contain alphanumeric characters, and -()*#_,
-        if len(label) > 0 and species.index >= 0 and not re.search(r'[^A-Za-z0-9\-_,\(\)\*#]+', label):
-            name = '{0}({1:d})'.format(label, species.index)
-            if len(name) <= 10:
-                return name
-    
-        # Next try the chemical formula
-        aug_inchi = species.getAugmentedInChI()
-        formula = aug_inchi.split('/')[1]
-        # Try the chemical formula
-        name = '{0}({1:d})'.format(formula, species.index)
-        if len(name) <= 10:
-            return name
-    
-        # As a last resort, just use the index
-        if species.index >= 0:
-            name = 'S({0:d})'.format(species.index)
-            if len(name) <= 10:
-                return name
-
-    # If we're here then we just can't come up with a valid Chemkin name
-    # for this species, so raise an exception
-    raise ChemkinError("Unable to determine valid Chemkin identifier for species {0}.".format(species))
+    label = labelgenerator.generateSpeciesIdentifier(**kwargs)
+    return label
 
 ################################################################################
 
