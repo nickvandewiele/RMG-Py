@@ -1681,3 +1681,13 @@ class InChISpecies(object):
 
         candidates.sort()
         return candidates[0]
+
+    def getThermo(self):
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+        thermo = thermo_engine.get_thermo(self.getAugmentedInChI())
+        return thermo
+
+    def getTransport(self):
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+        transport = thermo_engine.get_transport(self.getAugmentedInChI())
+        return transport

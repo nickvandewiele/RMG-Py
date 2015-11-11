@@ -260,7 +260,7 @@ class Species(object):
         Return ``True`` if the species has thermodynamic parameters, or 
         ``False`` otherwise.
         """
-        return self.thermo is not None
+        return self.getThermo() is not None
 
     def getPartitionFunction(self, T):
         """
@@ -282,7 +282,7 @@ class Species(object):
         cython.declare(Cp=cython.double)
         Cp = 0.0
         if self.hasThermo():
-            Cp = self.thermo.getHeatCapacity(T)
+            Cp = self.getThermo().getHeatCapacity(T)
         elif self.hasStatMech():
             Cp = self.conformer.getHeatCapacity(T)
         else:
@@ -297,7 +297,7 @@ class Species(object):
         cython.declare(H=cython.double)
         H = 0.0
         if self.hasThermo():
-            H = self.thermo.getEnthalpy(T)
+            H = self.getThermo().getEnthalpy(T)
         elif self.hasStatMech():
             H = self.conformer.getEnthalpy(T) + self.conformer.E0.value_si
         else:
@@ -312,7 +312,7 @@ class Species(object):
         cython.declare(S=cython.double)
         S = 0.0
         if self.hasThermo():
-            S = self.thermo.getEntropy(T)
+            S = self.getThermo().getEntropy(T)
         elif self.hasStatMech():
             S = self.conformer.getEntropy(T)
         else:
@@ -327,7 +327,7 @@ class Species(object):
         cython.declare(G=cython.double)
         G = 0.0
         if self.hasThermo():
-            G = self.thermo.getFreeEnergy(T)
+            G = self.getThermo().getFreeEnergy(T)
         elif self.hasStatMech():
             G = self.conformer.getFreeEnergy(T) + self.conformer.E0.value_si
         else:
@@ -429,7 +429,19 @@ class Species(object):
             candidates.append(cand)
 
         candidates.sort()
-        return candidates[0]        
+        return candidates[0]  
+
+    def getThermo(self):
+        import rmgpy.thermo.thermoengine
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+        thermo = thermo_engine.get_thermo(self.getAugmentedInChI())
+        return thermo
+
+    def getTransport(self):
+        import rmgpy.thermo.thermoengine
+        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+        transport = thermo_engine.get_transport(self.getAugmentedInChI())
+        return transport
 
 ################################################################################
 
@@ -501,8 +513,8 @@ class TransitionState():
         """
         cython.declare(Cp=cython.double)
         Cp = 0.0
-        if self.thermo is not None:
-            Cp = self.thermo.getHeatCapacity(T)
+        if self.getThermo() is not None:
+            Cp = self.getThermo().getHeatCapacity(T)
         elif self.conformer is not None and len(self.conformer.modes) > 0:
             Cp = self.conformer.getHeatCapacity(T)
         else:
@@ -516,8 +528,8 @@ class TransitionState():
         """
         cython.declare(H=cython.double)
         H = 0.0
-        if self.thermo is not None:
-            H = self.thermo.getEnthalpy(T)
+        if self.getThermo() is not None:
+            H = self.getThermo().getEnthalpy(T)
         elif self.conformer is not None and len(self.conformer.modes) > 0:
             H = self.conformer.getEnthalpy(T)
         else:
@@ -531,8 +543,8 @@ class TransitionState():
         """
         cython.declare(S=cython.double)
         S = 0.0
-        if self.thermo is not None:
-            S = self.thermo.getEntropy(T)
+        if self.getThermo() is not None:
+            S = self.getThermo().getEntropy(T)
         elif self.conformer is not None and len(self.conformer.modes) > 0:
             S = self.conformer.getEntropy(T)
         else:
@@ -546,8 +558,8 @@ class TransitionState():
         """
         cython.declare(G=cython.double)
         G = 0.0
-        if self.thermo is not None:
-            G = self.thermo.getFreeEnergy(T)
+        if self.getThermo() is not None:
+            G = self.getThermo().getFreeEnergy(T)
         elif self.conformer is not None and len(self.conformer.modes) > 0:
             G = self.conformer.getFreeEnergy(T)
         else:

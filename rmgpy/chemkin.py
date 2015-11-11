@@ -1058,7 +1058,7 @@ def readThermoBlock(f, speciesDict):
                 thermoBlock = ''
                 line = f.readline()
                 continue
-            elif speciesDict[label].thermo:
+            elif speciesDict[label].hasThermo():
                 logging.warning('Skipping duplicate thermo for the species {0}'.format(label))
                 thermoBlock = ''
                 line = f.readline()
@@ -1339,9 +1339,7 @@ def writeThermoEntry(species, verbose = True):
     To use this method you must have exactly two NASA polynomials in your
     model, and you must use the seven-coefficient forms for each.
     """
-    import rmgpy.thermo.thermoengine
-    thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
-    thermo = thermo_engine.get_thermo(species.getAugmentedInChI())
+    thermo = species.getThermo()
     if not isinstance(thermo, NASA):
         return ''
         raise ChemkinError('Cannot generate Chemkin string for species "{0}": Thermodynamics data must be a NASA object.'.format(species))
@@ -1754,13 +1752,12 @@ def saveTransportFile(path, species):
     7. After the last number, a comment field can be enclosed in parenthesis.
 
     """
-    import rmgpy.thermo.thermoengine
-    thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
+
     with open(path, 'w') as f:
         f.write("! {0:15} {1:8} {2:9} {3:9} {4:9} {5:9} {6:9} {7:9}\n".format('Species','Shape', 'LJ-depth', 'LJ-diam', 'DiplMom', 'Polzblty', 'RotRelaxNum','Data'))
         f.write("! {0:15} {1:8} {2:9} {3:9} {4:9} {5:9} {6:9} {7:9}\n".format('Name','Index', 'epsilon/k_B', 'sigma', 'mu', 'alpha', 'Zrot','Source'))
         for spec in species:
-            transportData = thermo_engine.get_transport(spec.getAugmentedInChI())
+            transportData = spec.getTransport()
             if (not transportData):
                 missingData = True
             else:
