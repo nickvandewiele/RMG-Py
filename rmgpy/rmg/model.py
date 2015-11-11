@@ -1657,7 +1657,7 @@ class InChISpecies(object):
     def __init__(self, spc):
         super(InChISpecies, self).__init__()
         assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
-        self.aug_inchi = self.generate_aug_inchi(spc)
+        self.aug_inchi = spc.getAugmentedInChI()
         self.index = spc.index
         self.label = spc.label
         self.coreSizeAtCreation = -1
@@ -1671,16 +1671,6 @@ class InChISpecies(object):
 
     def getAugmentedInChI(self):
         return self.aug_inchi
-
-    def generate_aug_inchi(self, spc):
-        candidates = []
-        spc.generateResonanceIsomers()
-        for mol in spc.molecule:
-            cand = mol.toAugmentedInChI()
-            candidates.append(cand)
-
-        candidates.sort()
-        return candidates[0]
 
     def getThermo(self):
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
