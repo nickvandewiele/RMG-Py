@@ -250,7 +250,7 @@ class CoreEdgeReactionModel:
         self.kineticsEstimator = 'group additivity'
         self.speciesConstraints = {}
 
-        self.coresize_at_creation = {} #aug_inchi : int
+        self.model_entry = {} #aug_inchi : tuple(core size, core + edge size)
 
 
     def makeNewInChISpecies(self, spec):
@@ -290,7 +290,7 @@ class CoreEdgeReactionModel:
         thermo_engine.submit(model_spc.getAugmentedInChI())
 
         inchi_spc = InChISpecies(model_spc)
-        self.coresize_at_creation[inchi_spc.aug_inchi] = len(self.core.species)
+        self.model_entry[inchi_spc.getAugmentedInChI()] = (len(self.core.species), speciesIndex)
 
         self.inchi_spc_dict[inchi_spc.getAugmentedInChI()] = inchi_spc
 
@@ -620,9 +620,10 @@ class CoreEdgeReactionModel:
                 newSpecies = obj
 
                 if isinstance(obj, InChISpecies):
+                    index = self.model_entry[obj.getAugmentedInChI()][1]
                     newSpecies = Species(
                      molecule=[Molecule().fromAugmentedInChI(newSpecies.getAugmentedInChI())],\
-                     index = newSpecies.index,
+                     index = index,
                      )
 
                     # Assuming that this species is already present in the speciesDict
@@ -1060,7 +1061,7 @@ class CoreEdgeReactionModel:
         # All edge species that have not existed for more than two enlarge
         # iterations are ineligible for pruning
         for spec in self.edge.species:
-            coreSizeAtCreation = self.coresize_at_creation[spec.getAugmentedInChI()]
+            coreSizeAtCreation = self.model_entry[spec.getAugmentedInChI()][0]
             if numCoreSpecies - coreSizeAtCreation <= minSpeciesExistIterationsForPrune:
                 ineligibleSpecies.append(spec)
 
@@ -1660,7 +1661,6 @@ class InChISpecies(object):
         super(InChISpecies, self).__init__()
         assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
         self.aug_inchi = spc.getAugmentedInChI()
-        self.index = spc.index
 
     def __str__(self):
         """
