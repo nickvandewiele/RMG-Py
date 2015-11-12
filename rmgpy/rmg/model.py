@@ -250,6 +250,8 @@ class CoreEdgeReactionModel:
         self.kineticsEstimator = 'group additivity'
         self.speciesConstraints = {}
 
+        self.coresize_at_creation = {} #aug_inchi : int
+
 
     def makeNewInChISpecies(self, spec):
         """
@@ -288,7 +290,7 @@ class CoreEdgeReactionModel:
         thermo_engine.submit(model_spc.getAugmentedInChI())
 
         inchi_spc = InChISpecies(model_spc)
-        inchi_spc.coreSizeAtCreation = len(self.core.species)
+        self.coresize_at_creation[inchi_spc.aug_inchi] = len(self.core.species)
 
         self.inchi_spc_dict[inchi_spc.getAugmentedInChI()] = inchi_spc
 
@@ -1058,7 +1060,8 @@ class CoreEdgeReactionModel:
         # All edge species that have not existed for more than two enlarge
         # iterations are ineligible for pruning
         for spec in self.edge.species:
-            if numCoreSpecies - spec.coreSizeAtCreation <= minSpeciesExistIterationsForPrune:
+            coreSizeAtCreation = self.coresize_at_creation[spec.getAugmentedInChI()]
+            if numCoreSpecies - coreSizeAtCreation <= minSpeciesExistIterationsForPrune:
                 ineligibleSpecies.append(spec)
 
         # Get the maximum species rates (and network leak rates)
@@ -1658,7 +1661,6 @@ class InChISpecies(object):
         assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
         self.aug_inchi = spc.getAugmentedInChI()
         self.index = spc.index
-        self.coreSizeAtCreation = -1
 
     def __str__(self):
         """
