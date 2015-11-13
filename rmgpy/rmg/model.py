@@ -234,7 +234,7 @@ class CoreEdgeReactionModel:
         self.networkCount = 0
     
         self.core_spc_dict = {} # "A" dictionary key = aug. inchi, value = rmgpy.rmg.model.Species
-        self.inchi_spc_dict = {} # "B" dictionary key = aug. inchi, value = rmgpy.rmg.model.InChISpecies
+        self.inchi_species_set = set()
 
         self.reactionDict = {} # 3 keys, 1st: family, 2nd: aug. inchi, 3rd: aug.inchi
         self.speciesCache = [None for i in range(4)]
@@ -253,48 +253,41 @@ class CoreEdgeReactionModel:
         self.model_entry = {} #aug_inchi : tuple(core size, core + edge size)
 
 
-    def makeNewInChISpecies(self, spec):
+    def registerAugmentedInChI(self, spec):
         """
-        Formally creates a new InChISpecies object from the parameter species, 
+        Formally registers an augmented inchi from the parameter species, 
         which can only be a Species object.
+
+        The registration involves:
+        - creating a species index (if non-existing)
+        - submitting a request to thermo engine
+        - registering the species index and core size at creation in the database
+        - adding the augmented inchi to the inchi species set
+
         """
         assert isinstance(spec, rmgpy.species.Species)
 
+        aug_inchi = spec.getAugmentedInChI()
 
-        if spec.getAugmentedInChI() in self.inchi_spc_dict:
-            return self.inchi_spc_dict[spec.getAugmentedInChI()]
+        if aug_inchi in self.inchi_species_set:
+            return aug_inchi
 
-        molecule = spec.molecule[0]
-        molecule.clearLabeledAtoms()
         speciesIndex = spec.index
-        label = spec.label if spec.label != '' else ''
         reactive = spec.reactive
 
-        # If we're here then we're ready to make the new species
-        if label == '': 
-            # Use SMILES as default format for label
-            # However, SMILES can contain slashes (to describe the
-            # stereochemistry around double bonds); since RMG doesn't 
-            # distinguish cis and trans isomers, we'll just strip these out
-            # so that we can use the label in file paths
-            label = molecule.toSMILES().replace('/','').replace('\\','')
-        logging.debug('Creating new InChI Species {0}'.format(label))
         if reactive and speciesIndex == -1:
             self.speciesCounter += 1   # count only reactive species
             speciesIndex = self.speciesCounter
 
-        model_spc = Species(index=speciesIndex, label=label, molecule=[molecule], reactive=reactive)
-
         thermo_engine = rmgpy.thermo.thermoengine.thermo_engine
         assert thermo_engine is not None
-        thermo_engine.submit(model_spc.getAugmentedInChI())
+        thermo_engine.submit(aug_inchi)
 
-        inchi_spc = InChISpecies(model_spc)
-        self.model_entry[inchi_spc.getAugmentedInChI()] = (len(self.core.species), speciesIndex)
+        self.model_entry[aug_inchi] = (len(self.core.species), speciesIndex)
 
-        self.inchi_spc_dict[inchi_spc.getAugmentedInChI()] = inchi_spc
+        self.inchi_species_set.add(aug_inchi)
 
-        return inchi_spc
+        return aug_inchi
 
     def makeNewSpecies(self, spc, submit=True, updateIndex=True):
         """
@@ -351,6 +344,7 @@ class CoreEdgeReactionModel:
 
         return new_spec, True
 
+
     def checkForExistingReaction(self, rxn):
         """
         Check to see if an existing reaction has the same reactants, products, and
@@ -359,13 +353,13 @@ class CoreEdgeReactionModel:
         """
 
         # Make sure the reactant and product lists are sorted before performing the check
-        rxn.reactants.sort(key=lambda spc: spc.getAugmentedInChI())
-        rxn.products.sort(key=lambda spc: spc.getAugmentedInChI())
+        reactants = sorted([create_key(reactant) for reactant in rxn.reactants])
+        products = sorted([create_key(product) for product in rxn.products])
 
         # Get the short-list of reactions with the same family, reactant1 and reactant2
-        r1 = rxn.reactants[0].getAugmentedInChI()
-        if len(rxn.reactants)==1: r2 = None
-        else: r2 = rxn.reactants[1].getAugmentedInChI()
+        r1 = create_key(reactants[0])
+        if len(reactants)==1: r2 = None
+        else: r2 = create_key(reactants[1])
         family = rxn.family
         try:
             my_reactionList = self.reactionDict[family][r1][r2][:]
@@ -375,9 +369,9 @@ class CoreEdgeReactionModel:
         # if the family is its own reverse (H-Abstraction) then check the other direction
         if isinstance(family,KineticsFamily) and family.ownReverse: # (family may be a KineticsLibrary)
             # Get the short-list of reactions with the same family, product1 and product2
-            r1 = rxn.products[0].getAugmentedInChI()
-            if len(rxn.products)==1: r2 = None
-            else: r2 = rxn.products[1].getAugmentedInChI()
+            r1 = create_key(products[0])
+            if len(products)==1: r2 = None
+            else: r2 = create_key(products[1])
             family = rxn.family
             try:
                 my_reactionList.extend(self.reactionDict[family][r1][r2])
@@ -386,7 +380,10 @@ class CoreEdgeReactionModel:
 
         # Now use short-list to check for matches. All should be in same forward direction.
         for rxn0 in my_reactionList:
-            if (rxn0.reactants == rxn.reactants and rxn0.products == rxn.products):
+            reactants0 = sorted([create_key(reactant) for reactant in rxn0.reactants])
+            products0 = sorted([create_key(product) for product in rxn0.products])
+
+            if (reactants0 == reactants and products0 == products):
                 if isinstance(family, KineticsLibrary):
                     # If the reaction comes from a kinetics library, then we can retain duplicates if they are marked
                     if not rxn.duplicate:
@@ -395,7 +392,7 @@ class CoreEdgeReactionModel:
                     return True, rxn0
             
             if isinstance(family,KineticsFamily) and family.ownReverse:
-                if (rxn0.reactants == rxn.products and rxn0.products == rxn.reactants):
+                if (reactants0 == products and products0 == reactants):
                     return True, rxn0
 
         # Now check seed mechanisms
@@ -405,28 +402,30 @@ class CoreEdgeReactionModel:
             if isinstance(family0, KineticsLibrary) and family0 != family:
 
                 # First check seed short-list in forward direction
-                r1 = rxn.reactants[0].getAugmentedInChI()
-                if len(rxn.reactants)==1: r2 = None
-                else: r2 = rxn.reactants[1].getAugmentedInChI()
+                r1 = create_key(reactants[0])
+                if len(reactants)==1: r2 = None
+                else: r2 = create_key(reactants[1])
                 try:
                     my_reactionList = self.reactionDict[family0][r1][r2]
                 except KeyError:
                     my_reactionList = []
                 for rxn0 in my_reactionList:
-                    if (rxn0.reactants == rxn.reactants and rxn0.products == rxn.products) or \
-                        (rxn0.reactants == rxn.products and rxn0.products == rxn.reactants):
+                    reactants0 = sorted([create_key(reactant) for reactant in rxn0.reactants])
+                    products0 = sorted([create_key(product) for product in rxn0.products])
+                    if (reactants0 == reactants and products0 == products) or \
+                        (reactants0 == products and products0 == reactants):
                         return True, rxn0
                 # Now get the seed short-list of the reverse reaction
-                r1 = rxn.products[0].getAugmentedInChI()
-                if len(rxn.products)==1: r2 = None
-                else: r2 = rxn.products[1].getAugmentedInChI()
+                r1 = create_key(products[0])
+                if len(products)==1: r2 = None
+                else: r2 = create_key(products[1])
                 try:
                     my_reactionList = self.reactionDict[family0][r1][r2]
                 except KeyError:
                     my_reactionList = []
                 for rxn0 in my_reactionList:
-                    if (rxn0.reactants == rxn.reactants and rxn0.products == rxn.products) or \
-                        (rxn0.reactants == rxn.products and rxn0.products == rxn.reactants):
+                    if (reactants0 == reactants and products0 == products) or \
+                        (reactants0 == products and products0 == reactants):
                         return True, rxn0
 
         return False, None
@@ -467,19 +466,19 @@ class CoreEdgeReactionModel:
                 products.append(spc)
 
         else:# at least one species is not found in the core
-            # convert all species to InChISpecies:
+            # convert all species to augmented inchis:
 
             for spc in forward.reactants:
                 if spc.getAugmentedInChI() in self.core_spc_dict:
                     spc = self.core_spc_dict[spc.getAugmentedInChI()]
-                spc = self.makeNewInChISpecies(spc)
-                reactants.append(spc)
+                aug_inchi = self.registerAugmentedInChI(spc)
+                reactants.append(aug_inchi)
 
             for spc in forward.products:
                 if spc.getAugmentedInChI() in self.core_spc_dict:
                     spc = self.core_spc_dict[spc.getAugmentedInChI()]
-                spc = self.makeNewInChISpecies(spc)
-                products.append(spc)
+                aug_inchi = self.registerAugmentedInChI(spc)
+                products.append(aug_inchi)
 
 
         if forward.pairs is not None:
@@ -496,7 +495,7 @@ class CoreEdgeReactionModel:
         # TODO do this later
         if checkExisting:
             found, rxn = self.checkForExistingReaction(forward)
-            if found: return rxn, False
+            if found: return rxn, False, allinCore
 
         # Generate the reaction pairs if not yet defined
         if forward.pairs is None:
@@ -517,10 +516,10 @@ class CoreEdgeReactionModel:
         # Add to the global dict/list of existing reactions (a list broken down by family, r1, r2)
         # identify r1 and r2
 
-        # TODO reactants will be different types (Species, InChISpecies) depending on whether the reaction is part of core/edge
+        # TODO reactants will be different types (Species, str) depending on whether the reaction is part of core/edge
 
-        r1 = forward.reactants[0].getAugmentedInChI()
-        r2 = None if len(forward.reactants) == 1 else forward.reactants[1].getAugmentedInChI()
+        r1 = create_key(forward.reactants[0])
+        r2 = None if len(forward.reactants) == 1 else create_key(forward.reactants[1])
         family = forward.family
         # make dictionary entries if necessary
         if family not in self.reactionDict:
@@ -539,7 +538,7 @@ class CoreEdgeReactionModel:
         self.newReactionList.append(forward)
 
         # Return newly created reaction
-        return forward, True
+        return forward, True, allinCore
 
     def makeNewPDepReaction(self, forward):
         """
@@ -615,14 +614,14 @@ class CoreEdgeReactionModel:
             newReactions = []
             pdepNetwork = None
         
-            if isinstance(obj, (Species, InChISpecies)):
+            if isinstance(obj, (Species, str)):
 
                 newSpecies = obj
 
-                if isinstance(obj, InChISpecies):
-                    index = self.model_entry[obj.getAugmentedInChI()][1]
+                if isinstance(obj, str):
+                    index = self.model_entry[obj][1]
                     newSpecies = Species(
-                     molecule=[Molecule().fromAugmentedInChI(newSpecies.getAugmentedInChI())],\
+                     molecule=[Molecule().fromAugmentedInChI(obj)],\
                      index = index,
                      )
 
@@ -685,7 +684,7 @@ class CoreEdgeReactionModel:
                     else:
                         index += 1
             
-            if isinstance(obj, InChISpecies):
+            if isinstance(obj, str):
                 # moved one species from edge to core
                 numOldEdgeSpecies -= 1
                 # moved these reactions from edge to core
@@ -766,31 +765,16 @@ class CoreEdgeReactionModel:
         Makes a reaction and decides where to put it: core, edge, or PDepNetwork.
         """
         for rxn in newReactions:
-            rxn, isNew = self.makeNewReaction(rxn)
+            rxn, isNew, allSpeciesInCore = self.makeNewReaction(rxn)
             if isNew:
-                # We've made a new reaction, so make sure the species involved
-                # are in the core or edge
-                allSpeciesInCore = True
-                # Add the reactant and product species to the edge if necessary
-                # At the same time, check if all reactants and products are in the core
-                for spec in itertools.chain(rxn.reactants, rxn.products):
-                    if spec.getAugmentedInChI() not in self.core_spc_dict:
-                        allSpeciesInCore = False
-                        edge_spec = None
-                        try:
-                            edge_spec = self.inchi_spc_dict[spec.getAugmentedInChI()]
-                        except KeyError, e:
-                            loggging.error('Could not find this species in inchi species dictionary.')
-                            raise e
-                        
-                        found = False
-                        for spc in self.edge.species:
-                            if spc.getAugmentedInChI() == edge_spec.getAugmentedInChI():
-                                found = True
-                                break
-                        
-                        if not found:
-                            self.addSpeciesToEdge(edge_spec)
+                if not allSpeciesInCore:
+                    # Add the reactant and product species to the edge if necessary
+                    # At the same time, check if all reactants and products are in the core
+                    for aug_inchi in itertools.chain(rxn.reactants, rxn.products):
+                        if aug_inchi not in self.core_spc_dict:
+                            found = aug_inchi in self.edge.species                        
+                            if not found:
+                                self.addSpeciesToEdge(aug_inchi)
             
             # Decide whether or not to handle the reaction as a pressure-dependent reaction
             pdep = True
@@ -813,16 +797,9 @@ class CoreEdgeReactionModel:
                 if not isNew: 
                     # The reaction is not new, so it should already be in the core or edge
                     continue
-                if allSpeciesInCore:
-                    #for reaction in self.core.reactions:
-                    #    if isinstance(reaction, Reaction) and reaction.isEquivalent(rxn): break
-                    #else:
-                    self.addReactionToCore(rxn)
-                else:
-                    #for reaction in self.edge.reactions:
-                    #    if isinstance(reaction, Reaction) and reaction.isEquivalent(rxn): break
-                    #else:
+                if not allSpeciesInCore:
                     self.addReactionToEdge(rxn)
+                    
             else:
                 # Add the reaction to the appropriate unimolecular reaction network
                 # If pdepNetwork is not None then that will be the network the
@@ -1000,21 +977,21 @@ class CoreEdgeReactionModel:
         # convert spec to edge species and move reactions from core to edge:
         aug_inchi = spec.getAugmentedInChI()
 
-        for spc in self.edge.species:
-            if spc.getAugmentedInChI() == aug_inchi:
+        for aug_inchi_edge in self.edge.species:
+            if aug_inchi_edge == aug_inchi:
                 # If species was in edge, remove it
                 logging.debug("Removing species {0} from edge.".format(spec))
-                self.edge.species.remove(spc)
+                self.edge.species.remove(aug_inchi_edge)
 
                 # Search edge for reactions that now contain only core species;
                 # these belong in the model core and will be moved there
 
                 for rxn in self.edge.reactions:
                     allCore = True
-                    for reactant in rxn.reactants:
-                        if reactant.getAugmentedInChI() not in self.core_spc_dict: allCore = False
-                    for product in rxn.products:
-                        if product.getAugmentedInChI() not in self.core_spc_dict: allCore = False
+                    for aug_inchi_rxn in rxn.reactants:
+                        if aug_inchi_rxn not in self.core_spc_dict: allCore = False
+                    for aug_inchi_rxn in rxn.products:
+                        if aug_inchi_rxn not in self.core_spc_dict: allCore = False
                     if allCore: rxnList.append(rxn)
 
                 # Move any identified reactions to the core
@@ -1027,24 +1004,16 @@ class CoreEdgeReactionModel:
 
         return rxnList
 
-    def addSpeciesToEdge(self, spec):
+    def addSpeciesToEdge(self, obj):
         """
-        Add a species `spec` to the reaction model edge.
+        Add a species `obj` to the reaction model edge.
         """
-        if isinstance(spec, InChISpecies):
-            self.edge.species.append(spec)
-            return
+        if isinstance(obj, Species):
+            aug_inchi = obj.getAugmentedInChI()
+        else:
+            aug_inchi = obj
 
-        assert isinstance(spec, Species)
-
-        edge_spec = None
-        try:
-            edge_spec = self.inchi_spc_dict[spec.getAugmentedInChI()]
-        except KeyError, e:
-            loggging.error('Could not find this species in inchi species dictionary.')
-            raise e
-
-        self.edge.species.append(edge_spec)
+        self.edge.species.append(aug_inchi)
         
 
     def prune(self, reactionSystems, toleranceKeepInEdge, maximumEdgeSpecies, minSpeciesExistIterationsForPrune):
@@ -1060,8 +1029,8 @@ class CoreEdgeReactionModel:
 
         # All edge species that have not existed for more than two enlarge
         # iterations are ineligible for pruning
-        for spec in self.edge.species:
-            coreSizeAtCreation = self.model_entry[spec.getAugmentedInChI()][0]
+        for aug_inchi in self.edge.species:
+            coreSizeAtCreation = self.model_entry[aug_inchi][0]
             if numCoreSpecies - coreSizeAtCreation <= minSpeciesExistIterationsForPrune:
                 ineligibleSpecies.append(spec)
 
@@ -1141,17 +1110,17 @@ class CoreEdgeReactionModel:
 
         logging.info('')
 
-    def removeSpeciesFromEdge(self, spec):
+    def removeSpeciesFromEdge(self, aug_inchi):
         """
         Remove species `spec` from the reaction model edge.
         """
 
         # remove the species
-        self.edge.species.remove(spec)
+        self.edge.species.remove(aug_inchi)
         # identify any reactions it's involved in
         rxnList = []
         for rxn in self.edge.reactions:
-            if spec in rxn.reactants or spec in rxn.products:
+            if aug_inchi in rxn.reactants or aug_inchi in rxn.products:
                 rxnList.append(rxn)
         # remove those reactions
         for rxn in rxnList:
@@ -1163,7 +1132,7 @@ class CoreEdgeReactionModel:
                 # Delete all path reactions involving the species
                 rxnList = []
                 for rxn in network.pathReactions:
-                    if spec in rxn.reactants or spec in rxn.products:
+                    if aug_inchi in rxn.reactants or aug_inchi in rxn.products:
                         rxnList.append(rxn)
                 if len(rxnList) > 0:
                     for rxn in rxnList:
@@ -1171,7 +1140,7 @@ class CoreEdgeReactionModel:
                     # Delete all net reactions involving the species
                     rxnList = []
                     for rxn in network.netReactions:
-                        if spec in rxn.reactants or spec in rxn.products:
+                        if aug_inchi in rxn.reactants or aug_inchi in rxn.products:
                             rxnList.append(rxn)
                     for rxn in rxnList:
                         network.netReactions.remove(rxn)
@@ -1182,23 +1151,22 @@ class CoreEdgeReactionModel:
         # Remove from the global list of reactions
         # also remove it from the global list of reactions
         for family in self.reactionDict:
-            if spec in self.reactionDict[family]:
-                del self.reactionDict[family][spec]
-            for reactant1 in self.reactionDict[family]:
-                if spec in self.reactionDict[family][reactant1]:
-                    del self.reactionDict[family][reactant1][spec]
-            for reactant1 in self.reactionDict[family]:
-                for reactant2 in self.reactionDict[family][reactant1]:
-                    tempRxnDeleteList = []
-                    for templateReaction in self.reactionDict[family][reactant1][reactant2]:
-                        if spec in templateReaction.reactants or spec in templateReaction.products:
-                            tempRxnDeleteList.append(templateReaction)
-                    for tempRxnToBeDeleted in tempRxnDeleteList:
-                        self.reactionDict[family][reactant1][reactant2].remove(tempRxnToBeDeleted)
+            if aug_inchi in self.reactionDict[family]:
+                del self.reactionDict[family][aug_inchi]
+            for aug_inchi1 in self.reactionDict[family]:
+                if aug_inchi in self.reactionDict[family][aug_inchi1]:
+                    del self.reactionDict[family][aug_inchi1][aug_inchi]
+            for aug_inchi1 in self.reactionDict[family]:
+                for aug_inchi2 in self.reactionDict[family][aug_inchi1]:
+                    rxnDeleteList = []
+                    for rxn in self.reactionDict[family][aug_inchi1][aug_inchi2]:
+                        if aug_inchi in rxn.reactants or aug_inchi in rxn.products:
+                            rxnDeleteList.append(rxn)
+                    for rxnToBeDeleted in rxnDeleteList:
+                        self.reactionDict[family][aug_inchi1][aug_inchi2].remove(rxnToBeDeleted)
 
         # remove from the global list of species, to free memory
-        formula = spec.molecule[0].getFormula()
-        del self.inchi_spc_dict[spec.getAugmentedInChI()]
+        self.inchi_species_set.remove(aug_inchi)
 
     def addReactionToCore(self, rxn):
         """
@@ -1209,12 +1177,14 @@ class CoreEdgeReactionModel:
         """
 
         reactants, products = [], []
-        for spc in rxn.reactants:
-            spc = self.core_spc_dict[spc.getAugmentedInChI()]
+        for obj in rxn.reactants:
+            key = create_key(obj)
+            spc = self.core_spc_dict[key]
             reactants.append(spc)
 
-        for spc in rxn.products:
-            spc = self.core_spc_dict[spc.getAugmentedInChI()]
+        for obj in rxn.products:
+            key = create_key(obj)
+            spc = self.core_spc_dict[key]
             products.append(spc)
 
         rxn.reactants = reactants
@@ -1277,7 +1247,7 @@ class CoreEdgeReactionModel:
                 nu = rxn.getStoichiometricCoefficient(spec)
                 if nu != 0: stoichiometry[i,j] = nu
         return stoichiometry.tocsr()
-
+ 
     def addSeedMechanismToCore(self, seedMechanism, react=False):
         """
         Add all species and reactions from `seedMechanism`, a 
@@ -1301,7 +1271,7 @@ class CoreEdgeReactionModel:
 
         for entry in seedMechanism.entries.values():
             rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=seedMechanism, kinetics=entry.data, duplicate=entry.item.duplicate, reversible=entry.item.reversible)
-            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
+            r, isNew, _ = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
             
         # Perform species constraints and forbidden species checks
         
@@ -1368,7 +1338,7 @@ class CoreEdgeReactionModel:
 
         for entry in reactionLibrary.entries.values():
             rxn = LibraryReaction(reactants=entry.item.reactants[:], products=entry.item.products[:], library=reactionLibrary, kinetics=entry.data, duplicate=entry.item.duplicate, reversible=entry.item.reversible)
-            r, isNew = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
+            r, isNew, _ = self.makeNewReaction(rxn) # updates self.newSpeciesList and self.newReactionlist
             if not isNew: logging.info("This library reaction was not new: {0}".format(rxn))
             
         # Perform species constraints and forbidden species checks
@@ -1655,28 +1625,13 @@ class CoreEdgeReactionModel:
             return True
         return False
 
-class InChISpecies(object):
-    """docstring for InChISpecies"""
-    def __init__(self, spc):
-        super(InChISpecies, self).__init__()
-        assert isinstance(spc, Species), 'Species is not a rmgpy.rmg.model.Species instance.'
-        self.aug_inchi = spc.getAugmentedInChI()
-
-    def __str__(self):
-        """
-        Return a string representation of the species, in the form 'label(id)'.
-        """
-        return '{}'.format(self.aug_inchi)
-
-    def getAugmentedInChI(self):
-        return self.aug_inchi
-
-    def getThermo(self):
-        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
-        thermo = thermo_engine.get_thermo(self.getAugmentedInChI())
-        return thermo
-
-    def getTransport(self):
-        thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
-        transport = thermo_engine.get_transport(self.getAugmentedInChI())
-        return transport
+def create_key(obj):
+    """
+    Generates the augmented inchi for 
+    objects that are either augmented inchis (strings) or
+    Species objects.
+    """
+    if isinstance(obj, str):
+        return obj
+    elif isinstance(obj, Species):
+        return obj.getAugmentedInChI()

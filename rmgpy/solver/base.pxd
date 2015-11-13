@@ -106,4 +106,4 @@ cdef class ReactionSystem(DASx):
 
     cpdef logRates(self, double charRate, object species, double speciesRate, object network, double networkRate)
 
-    cpdef logConversions(self, speciesIndex, y0)
+    cpdef logConversions(self, y0)

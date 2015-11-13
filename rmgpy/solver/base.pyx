@@ -236,12 +236,16 @@ cdef class ReactionSystem(DASx):
             
             self.senpar = numpy.zeros(self.numCoreReactions, numpy.float64)
 
-    def get_species_index(self, spc):
+    def get_species_index(self, obj):
         """
         Retrieves the index that is associated with the parameter species
         from the species index dictionary.
         """
-        return self.speciesIndex[spc]
+
+        if isinstance(obj, str):
+            return self.speciesIndex[obj]
+        else:
+            return self.speciesIndex[obj.getAugmentedInChI()]
 
     def generate_reactant_product_indices(self, coreReactions, edgeReactions):
         """
@@ -266,8 +270,11 @@ cdef class ReactionSystem(DASx):
         store the (species, index) pair in a dictionary.
         """
         
-        for index, spec in enumerate(itertools.chain(coreSpecies, edgeSpecies)):
-            self.speciesIndex[spec] = index
+        for index, obj in enumerate(itertools.chain(coreSpecies, edgeSpecies)):
+            if isinstance(obj, str):
+                self.speciesIndex[obj] = index
+            else:
+                self.speciesIndex[obj.getAugmentedInChI()] = index
 
     def generate_reaction_indices(self, coreReactions, edgeReactions):
         """
@@ -337,7 +344,6 @@ cdef class ReactionSystem(DASx):
         ``None`` is returned.
         """
 
-        cdef dict speciesIndex
         cdef list row
         cdef int index, maxSpeciesIndex, maxNetworkIndex
         cdef int numCoreSpecies, numEdgeSpecies, numPdepNetworks, numCoreReactions
@@ -363,9 +369,9 @@ cdef class ReactionSystem(DASx):
         numPdepNetworks = len(pdepNetworks)
         numCoreReactions = len(coreReactions)
 
-        speciesIndex = {}
+        self.speciesIndex = {}
         for index, spec in enumerate(coreSpecies):
-            speciesIndex[spec] = index
+            self.speciesIndex[spec.getAugmentedInChI()] = index
         
         self.initializeModel(coreSpecies, coreReactions, edgeSpecies, edgeReactions, pdepNetworks, absoluteTolerance, relativeTolerance, sensitivity, sensitivityAbsoluteTolerance, sensitivityRelativeTolerance)
 
@@ -397,7 +403,7 @@ cdef class ReactionSystem(DASx):
             normSens_array = [[] for spec in self.sensitiveSpecies]    
             RTP = constants.R * self.T.value_si / self.P.value_si
             # identify sensitive species indices
-            sensSpeciesIndices = numpy.array([speciesIndex[spec] for spec in self.sensitiveSpecies], numpy.int)  # index within coreSpecies list of the sensitive species
+            sensSpeciesIndices = numpy.array([self.get_species_index(spec) for spec in self.sensitiveSpecies], numpy.int)  # index within coreSpecies list of the sensitive species
                 
         
         stepTime = 1e-12
@@ -476,12 +482,12 @@ cdef class ReactionSystem(DASx):
             if maxSpeciesRate > toleranceMoveToCore * charRate and not invalidObject:
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for moving to model core'.format(self.t, maxSpecies))
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
-                self.logConversions(speciesIndex, y0)
+                self.logConversions(y0)
                 invalidObject = maxSpecies
             if maxSpeciesRate > toleranceInterruptSimulation * charRate:
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for simulation interruption'.format(self.t, maxSpecies))
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
-                self.logConversions(speciesIndex, y0)
+                self.logConversions(y0)
                 break
 
             # If pressure dependence, also check the network leak fluxes
@@ -489,12 +495,12 @@ cdef class ReactionSystem(DASx):
                 if maxNetworkRate > toleranceMoveToCore * charRate and not invalidObject:
                     logging.info('At time {0:10.4e} s, PDepNetwork #{1:d} exceeded the minimum rate for exploring'.format(self.t, maxNetwork.index))
                     self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
-                    self.logConversions(speciesIndex, y0)
+                    self.logConversions(y0)
                     invalidObject = maxNetwork
                 if maxNetworkRate > toleranceInterruptSimulation * charRate:
                     logging.info('At time {0:10.4e} s, PDepNetwork #{1:d} exceeded the minimum rate for simulation interruption'.format(self.t, maxNetwork.index))
                     self.logRates(charRate, maxSpecies, maxSpeciesRate, maxNetwork, maxNetworkRate)
-                    self.logConversions(speciesIndex, y0)
+                    self.logConversions(y0)
                     break
 
             # Finish simulation if any of the termination criteria are satisfied
@@ -503,14 +509,14 @@ cdef class ReactionSystem(DASx):
                     if self.t > term.time.value_si:
                         terminated = True
                         logging.info('At time {0:10.4e} s, reached target termination time.'.format(term.time.value_si))
-                        self.logConversions(speciesIndex, y0)
+                        self.logConversions(y0)
                         break
                 elif isinstance(term, TerminationConversion):
-                    index = speciesIndex[term.species]
+                    index = self.get_species_index(term.species)
                     if 1 - (y_coreSpecies[index] / y0[index]) > term.conversion:
                         terminated = True
                         logging.info('At time {0:10.4e} s, reached target termination conversion: {1:f} of {2}'.format(self.t,term.conversion,term.species))
-                        self.logConversions(speciesIndex, y0)
+                        self.logConversions(y0)
                         break
 
             # Increment destination step time if necessary
@@ -564,13 +570,13 @@ cdef class ReactionSystem(DASx):
             if network is not None:
                 logging.info('    PDepNetwork #{0:d} leak rate: {1:10.4e} mol/m^3*s ({2:.4g})'.format(network.index, networkRate, networkRate / charRate))
 
-    cpdef logConversions(self, speciesIndex, y0):
+    cpdef logConversions(self, y0):
         """
         Log information about the current conversion values.
         """
         for term in self.termination:
             if isinstance(term, TerminationConversion):
-                index = speciesIndex[term.species]
+                index = self.get_species_index(term.species)
                 X = 1 - (self.y[index] / y0[index])
                 logging.info('    {0} conversion: {1:<10.4g}'.format(term.species, X))
 
