@@ -10,7 +10,7 @@ class ReductionReactionTest(unittest.TestCase):
 
     def setUp(self):
         from rmgpy.reaction import Reaction
-        from rmgpy.reduction.reduction import ReductionReaction
+        from .model import ReductionReaction
 
         mol1 = MockMolecule(label='mol1')
         mol2 = MockMolecule(label='mol2')
