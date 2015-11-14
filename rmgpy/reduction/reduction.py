@@ -5,26 +5,16 @@ import os.path
 import numpy as np
 import re
 import sys
+import logging
 
 #global variables
 reactions = None
 
 
 #local imports
-try:
-    from scoop import shared
-    from scoop.futures import map as map_
-    from scoop import logger as logging
-    logging.setLevel(20)#10 : debug, 20: info
-except ImportError:
-    map_ = map
-    import logging
-    logging.error('Import Error!')
-
 from rmgpy.chemkin import getSpeciesIdentifier
 
 from rmgpy.rmg.main import RMG
-from rmgpy.reduction.scoop_framework.workerwrapper import WorkerWrapper
 
 from .model import ReductionReaction
 from .input import load
@@ -107,16 +97,14 @@ def simulate_all(rmg):
     return data
         
 
-
 def initialize(wd, rxns):
     global working_dir, reactions
     working_dir = wd
     assert os.path.isdir(working_dir)
     
     #set global variable here such that functions executed in the root worker have access to it.
-    reactions = rxns
-    reduce_reactions = [ReductionReaction(rxn) for rxn in rxns]
-    shared.setConst(reactions = reduce_reactions)
+    
+    reactions = [ReductionReaction(rxn) for rxn in rxns]
 
 
 def find_important_reactions(rmg, tolerance):
@@ -139,7 +127,7 @@ def find_important_reactions(rmg, tolerance):
     # run the simulation, creating concentration profiles for each reaction system defined in input.
     simdata = simulate_all(rmg)
 
-    reduce_reactions = [ReductionReaction(rxn) for rxn in reactions]
+    reduce_reactions = reactions
 
     """
     Tolerance to decide whether a reaction is unimportant for the formation/destruction of a species
@@ -157,7 +145,11 @@ def find_important_reactions(rmg, tolerance):
     boolean_array = []
     for chunk in chunks(reduce_reactions,CHUNKSIZE):
         N = len(chunk)
-        partial_results = list(map_(WorkerWrapper(assess_reaction), chunk, [rmg.reactionSystems] * N, [tolerance] * N, [simdata] * N))
+        partial_results = list(
+            map(
+                assess_reaction, chunk, [rmg.reactionSystems] * N, [tolerance] * N, [simdata] * N
+                )
+            )
         boolean_array.extend(partial_results)
 
     important_rxns = []
@@ -184,7 +176,7 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     
     logging.debug('Assessing reaction {}'.format(rxn))
 
-    reactions = shared.getConst('reactions')
+    global reactions
     
 
     # read in the intermediate state variables
