@@ -419,24 +419,6 @@ def calc_Ri(spc_i,rij, reactions, reactant_or_product, T, P, coreSpeciesConcentr
 def print_info(rxn, spc, important):
     logging.info('Is reaction {0} important for species {1}: {2}'.format(rxn, spc, important))
 
-
-def write_model(rmg, chemkin_name='reduced_reactions.inp'):
-    saveChemkinFile(chemkin_name, rmg.reactionModel.core.species, rmg.reactionModel.core.reactions)
-
-
-def saveChemkinFile(path, species, reactions, verbose = True):
-    from rmgpy.chemkin import writeKineticsEntry
-
-    s ='REACTIONS    KCAL/MOLE   MOLES\n\n'
-
-    for rxn in reactions:
-        s +=writeKineticsEntry(rxn, speciesList=species, verbose=verbose)
-        s +='\n'
-    s +='END\n\n'
-
-    with open(path, 'w') as f:
-        f.write(s)
-
 def search_target(target_label, reactionSystem):
 
     for k in reactionSystem.initialMoleFractions.keys():
