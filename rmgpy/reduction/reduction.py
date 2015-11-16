@@ -16,10 +16,10 @@ from rmgpy.chemkin import getSpeciesIdentifier
 
 from rmgpy.rmg.main import RMG
 
-from .model import ReductionReaction
-from .input import load
-from .output import write_model
-from .rates import isImportant
+from rmgpy.reduction.model import ReductionReaction
+from rmgpy.reduction.input import load
+from rmgpy.reduction.output import write_model
+from rmgpy.reduction.rates import isImportant
 
 
 def simulate_one(reactionModel, atol, rtol, reactionSystem):
