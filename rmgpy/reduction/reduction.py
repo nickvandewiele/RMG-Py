@@ -33,7 +33,6 @@ import copy
 import os.path
 import numpy as np
 import re
-import sys
 import logging
 
 #global variables
@@ -46,8 +45,6 @@ from rmgpy.chemkin import getSpeciesIdentifier
 from rmgpy.rmg.main import RMG
 
 from rmgpy.reduction.model import ReductionReaction
-from rmgpy.reduction.input import load
-from rmgpy.reduction.output import write_model
 from rmgpy.reduction.rates import isImportant
 
 
@@ -120,7 +117,7 @@ def simulate_all(rmg):
     data = []
 
     atol, rtol = rmg.absoluteTolerance, rmg.relativeTolerance
-    for _, reactionSystem in enumerate(rmg.reactionSystems):
+    for reactionSystem in rmg.reactionSystems:
         data.append(simulate_one(reactionModel, atol, rtol, reactionSystem))
 
     return data
@@ -170,6 +167,12 @@ def find_important_reactions(rmg, tolerance):
     model by a few reactions.
     """
 
+
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in xrange(0, len(l), n):
+            yield l[i:i+n]
+
     CHUNKSIZE = 40
     boolean_array = []
     for chunk in chunks(reduce_reactions,CHUNKSIZE):
@@ -199,7 +202,6 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
 
     It iterates over a number of samples in profile and 
     evaluates the importance of the reaction at every sample.
-
 
     """
     
@@ -283,6 +285,7 @@ def compute_conversion(target_label, reactionModel, reactionSystem, reactionSyst
 
     #reset reaction system variables:
     logging.info('No. of rxns in core reactions: {}'.format(len(reactionModel.core.reactions)))
+
     reactionSystem.initializeModel(\
         reactionModel.core.species, reactionModel.core.reactions,\
         reactionModel.edge.species, reactionModel.edge.reactions, \
@@ -298,7 +301,7 @@ def compute_conversion(target_label, reactionModel, reactionSystem, reactionSyst
     conv = 1 - (reactionSystem.y[target_index] / y0[target_index])
     return conv
 
-def reduce_compute(tolerance, target_label, reactionModel, rmg, reaction_system_index):
+def reduce_model(tolerance, target_label, reactionModel, rmg, reaction_system_index):
     """
     Reduces the model for the given tolerance and evaluates the 
     target conversion.
@@ -327,39 +330,6 @@ def reduce_compute(tolerance, target_label, reactionModel, rmg, reaction_system_
     logging.info('Conversion of reduced model ({} rxns): {:.2f}%'.format(no_important_reactions, conversion * 100))
     return conversion, important_reactions
 
-def optimize_tolerance(target_label, reactionModel, rmg, reaction_system_index, error, orig_conv):
-    """
-    Increment the trial tolerance from a very low value until the introduced error is greater than the parameter threshold.
-    """
-
-
-    start = 1E-20
-    incr = 10
-    tolmax = 1
-
-    tol = start
-    trial = start
-
-    important_reactions = reactionModel.core.reactions
-    
-    while True:
-        logging.info('Trial tolerance: {trial:.2E}'.format(**locals()))
-        Xred, new_important_reactions = reduce_compute(trial, target_label, reactionModel, rmg, reaction_system_index)
-        dev = np.abs((Xred - orig_conv) / orig_conv)
-        logging.info('Deviation: {dev:.2f}'.format(**locals()))
-
-        if dev > error or trial > tolmax:
-            break
-
-        tol = trial
-        trial = trial * incr
-        important_reactions = new_important_reactions
-
-    if tol == start:
-        logging.error('Starting value for tolerance was too high...')
-
-    return tol, important_reactions
-
 class ConcentrationListener(object):
     """Returns the species concentration profiles at each time step."""
 
@@ -369,48 +339,3 @@ class ConcentrationListener(object):
 
     def update(self, subject):
         self.data.append((subject.t , subject.coreSpeciesConcentrations))
-
-
-def main():
-    
-    inputFile, reductionFile, chemkinFile, spc_dict = sys.argv[-4:]
-
-    for f in [inputFile, reductionFile, chemkinFile, spc_dict]:
-        assert os.path.isfile(f), 'Could not find {}'.format(f)
-
-    inputDirectory = os.path.abspath(os.path.dirname(inputFile))
-    output_directory = inputDirectory
-
-    rmg, target_label, error = load(inputFile, reductionFile, chemkinFile, spc_dict)
-
-    reactionModel = rmg.reactionModel
-    initialize(rmg.outputDirectory, reactionModel.core.reactions)
-
-    atol, rtol = rmg.absoluteTolerance, rmg.relativeTolerance
-    index = 0
-    reactionSystem = rmg.reactionSystems[index]
-
-    print 'Allowed error in target conversion: {0:.0f}%'.format(error * 100)
-    
-    #compute original target conversion
-    Xorig = compute_conversion(target_label, reactionModel, reactionSystem, index,\
-     rmg.absoluteTolerance, rmg.relativeTolerance)
-    print 'Original target conversion: {0:.0f}%'.format(Xorig * 100)
-
-    # optimize reduction tolerance
-    tol, important_reactions = optimize_tolerance(target_label, reactionModel, rmg, index, error, Xorig)
-    print 'Optimized tolerance: {:.0E}'.format(tol)
-
-    # plug the important reactions into the RMG object and write:
-    rmg.reactionModel.core.reactions = important_reactions
-    write_model(rmg)
-
-
-
-def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in xrange(0, len(l), n):
-        yield l[i:i+n]
-
-if __name__ == '__main__':
-    main()
