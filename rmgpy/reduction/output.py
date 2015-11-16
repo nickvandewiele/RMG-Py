@@ -28,9 +28,15 @@
 #
 ################################################################################
 
+import logging
+
 from rmgpy.chemkin import writeKineticsEntry
 
 def write_model(rmg, chemkin_name='reduced_reactions.inp'):
+    """
+    Writes the reduced reaction model to a chemkin compatible files.
+    """
+    logging.info('Writing reduced model to {}'.format(chemkin_name))
     saveChemkinFile(chemkin_name, rmg.reactionModel.core.species, rmg.reactionModel.core.reactions)
 
 

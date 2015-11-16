@@ -180,7 +180,6 @@ def isImportant(rxn, species_i, reactions, reactant_or_product, tolerance, T, P,
     keep = True
     remove = False
     """
-    #calc Ri, where i = species
 
 
     rij = calc_rij(rxn, species_i, reactant_or_product, T, P, coreSpeciesConcentrations) 
@@ -210,8 +209,6 @@ def isImportant(rxn, species_i, reactions, reactant_or_product, tolerance, T, P,
         if np.allclose([tolerance, alpha], [1.0, 1.0]):
             return False
             
-        # print "rij: {0}, Ri: {1}, rxn: {2}, species: {3}, reactant: {4}, alpha: {5}, tolerance: {6}"\
-        # .format(rij, Ri, rxn_j, species_i, reactant_or_product, alpha, tolerance)
         return True
         #where tolerance is user specified tolerance
  

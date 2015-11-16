@@ -195,7 +195,7 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     Returns whether the reaction is important or not in the reactions.
 
     It iterates over the reaction systems, and loads the concentration profile 
-    of each reaction system into memory.
+    of each reaction system.
 
     It iterates over a number of samples in profile and 
     evaluates the importance of the reaction at every sample.
@@ -239,7 +239,6 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
 
             coreSpeciesConcentrations = {key: float(value) for (key, value) in zip(species_names, coreSpeciesConcentrations)}
             
-            # print 'Species concentrations at {}: {}'.format(timepoint, reactionSystem.coreSpeciesConcentrations)
             for species_i in rxn.reactants:
                 if isImportant(rxn, species_i, reactions, 'reactant', tolerance, T, P, coreSpeciesConcentrations):
                     return True
@@ -252,10 +251,11 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     return False
 
     
-def print_info(rxn, spc, important):
-    logging.info('Is reaction {0} important for species {1}: {2}'.format(rxn, spc, important))
-
 def search_target(target_label, reactionSystem):
+    """
+    Searches for the Species object in the set of initial species
+    that has the same label as the parameter string.
+    """
 
     for k in reactionSystem.initialMoleFractions.keys():
         if k.label == target_label:
