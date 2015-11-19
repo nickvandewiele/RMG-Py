@@ -438,11 +438,11 @@ class Reaction:
         If `eitherDirection=False` then the directions must match.
         """
         # TODO Cache the list of inchis per reaction?
-        self_reactant_inchis = sorted([spc.getAugmentedInChI() for spc in self.reactants])
-        self_product_inchis = sorted([spc.getAugmentedInChI() for spc in self.products])
+        self_reactant_inchis = sorted([getAugmentedInChI(spc) for spc in self.reactants])
+        self_product_inchis = sorted([getAugmentedInChI(spc) for spc in self.products])
 
-        other_reactant_inchis = sorted([spc.getAugmentedInChI() for spc in other.reactants])
-        other_product_inchis = sorted([spc.getAugmentedInChI() for spc in other.products])
+        other_reactant_inchis = sorted([getAugmentedInChI(spc) for spc in other.reactants])
+        other_product_inchis = sorted([getAugmentedInChI(spc) for spc in other.products])
 
         forwardReactantsMatch = self_reactant_inchis == other_reactant_inchis
 
