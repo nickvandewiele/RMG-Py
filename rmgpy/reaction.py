@@ -475,9 +475,9 @@ class Reaction:
         cython.declare(dHrxn=cython.double)
         dHrxn = 0.0
         for reactant in self.reactants:
-            dHrxn -= reactant.getThermo().getEnthalpy(T)
+            dHrxn -= getThermo(reactant).getEnthalpy(T)
         for product in self.products:
-            dHrxn += product.getThermo().getEnthalpy(T)
+            dHrxn += getThermo(product).getEnthalpy(T)
         return dHrxn
 
     def getEntropyOfReaction(self, T):
@@ -488,9 +488,9 @@ class Reaction:
         cython.declare(dSrxn=cython.double)
         dSrxn = 0.0
         for reactant in self.reactants:
-            dSrxn -= reactant.getThermo().getEntropy(T)
+            dSrxn -= getThermo(reactant).getEntropy(T)
         for product in self.products:
-            dSrxn += product.getThermo().getEntropy(T)
+            dSrxn += getThermo(product).getEntropy(T)
         return dSrxn
 
     def getFreeEnergyOfReaction(self, T):
@@ -501,9 +501,9 @@ class Reaction:
         cython.declare(dGrxn=cython.double)
         dGrxn = 0.0
         for reactant in self.reactants:
-            dGrxn -= reactant.getThermo().getFreeEnergy(T)
+            dGrxn -= getThermo(reactant).getFreeEnergy(T)
         for product in self.products:
-            dGrxn += product.getThermo().getFreeEnergy(T)
+            dGrxn += getThermo(product).getFreeEnergy(T)
         return dGrxn
 
     def getEquilibriumConstant(self, T, type='Kc'):
@@ -621,8 +621,8 @@ class Reaction:
         cython.declare(H0=cython.double, H298=cython.double, Ea=cython.double)
 
         H298 = self.getEnthalpyOfReaction(298)
-        H0 = sum([spec.getThermo().E0.value_si for spec in self.products]) \
-            - sum([spec.getThermo().E0.value_si for spec in self.reactants])
+        H0 = sum([getThermo(spec).E0.value_si for spec in self.products]) \
+            - sum([getThermo(spec).E0.value_si for spec in self.reactants])
         if isinstance(self.kinetics, ArrheniusEP):
             Ea = self.kinetics.E0.value_si # temporarily using Ea to store the intrinsic barrier height E0
             self.kinetics = self.kinetics.toArrhenius(H298)
@@ -1004,3 +1004,22 @@ class Reaction:
         
         return other
 
+def getAugmentedInChI(obj):
+    if isinstance(obj, str):
+        return obj
+    else:
+        return obj.getAugmentedInChI()
+
+def getThermo(obj):
+    import rmgpy.thermo.thermoengine                        
+    aug_inchi = getAugmentedInChI(obj)
+    thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+    thermo = thermo_engine.get_thermo(aug_inchi)
+    return thermo
+
+def getTransport(obj):
+    import rmgpy.thermo.thermoengine                        
+    aug_inchi = getAugmentedInChI(obj)
+    thermo_engine = rmgpy.thermo.thermoengine.thermo_engine 
+    transport = thermo_engine.get_thermo(aug_inchi)
+    return transport    
