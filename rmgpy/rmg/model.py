@@ -447,11 +447,7 @@ class CoreEdgeReactionModel:
 
         # TODO Can we store the nature of the reaction (core/edge) already here? Maybe as an attribute
 
-        allinCore = True
-        for spc in itertools.chain(forward.reactants, forward.products):
-            if not spc.getAugmentedInChI() in self.core_spc_dict:
-                allinCore = False
-                break
+        allinCore = self.are_all_species_in_core(forward)
 
         reactants, products = [], []
 
@@ -987,12 +983,9 @@ class CoreEdgeReactionModel:
                 # these belong in the model core and will be moved there
 
                 for rxn in self.edge.reactions:
-                    allCore = True
-                    for aug_inchi_rxn in rxn.reactants:
-                        if aug_inchi_rxn not in self.core_spc_dict: allCore = False
-                    for aug_inchi_rxn in rxn.products:
-                        if aug_inchi_rxn not in self.core_spc_dict: allCore = False
-                    if allCore: rxnList.append(rxn)
+                    allCore = self.are_all_species_in_core(rxn)
+                    if allCore: 
+                        rxnList.append(rxn)
 
                 # Move any identified reactions to the core
                 for rxn in rxnList:
@@ -1624,6 +1617,18 @@ class CoreEdgeReactionModel:
         if (struct.getNumberOfRadicalElectrons() > maxRadicals):
             return True
         return False
+    
+    def are_all_species_in_core(self, rxn):
+        """
+        Checks if all reactants/products of the reaction 
+        are found in the core species database.
+        """   
+        for obj in itertools.chain(rxn.reactants, rxn.products):
+            aug_inchi = create_key(obj)
+            if aug_inchi not in self.core_spc_dict:
+                return False
+
+        return True
 
 def create_key(obj):
     """
