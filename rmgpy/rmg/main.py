@@ -493,7 +493,7 @@ class RMG(util.Subject):
         found in the RMG input file.
         """
 
-        self.attach(ChemkinWriter(self.outputDirectory))
+        # self.attach(ChemkinWriter(self.outputDirectory))
 
         if self.generateOutputHTML:
             self.attach(OutputHTMLWriter(self.outputDirectory))
@@ -525,7 +525,7 @@ class RMG(util.Subject):
         self.register_listeners()
 
         self.done = False
-        # self.saveEverything()
+        self.saveEverything()
         # Main RMG loop
         while not self.done:
                 
@@ -586,7 +586,7 @@ class RMG(util.Subject):
                 for objectToEnlarge in objectsToEnlarge:
                     self.reactionModel.enlarge(objectToEnlarge)
 
-            # self.saveEverything()
+            self.saveEverything()
 
 
             # Consider stopping gracefully if the next iteration might take us
