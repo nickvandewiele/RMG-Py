@@ -353,13 +353,13 @@ class CoreEdgeReactionModel:
         """
 
         # Make sure the reactant and product lists are sorted before performing the check
-        reactants = sorted([create_key(reactant) for reactant in rxn.reactants])
-        products = sorted([create_key(product) for product in rxn.products])
+        reactants = sorted([get_augmented_inchi(reactant) for reactant in rxn.reactants])
+        products = sorted([get_augmented_inchi(product) for product in rxn.products])
 
         # Get the short-list of reactions with the same family, reactant1 and reactant2
-        r1 = create_key(reactants[0])
+        r1 = get_augmented_inchi(reactants[0])
         if len(reactants)==1: r2 = None
-        else: r2 = create_key(reactants[1])
+        else: r2 = get_augmented_inchi(reactants[1])
         family = rxn.family
         try:
             my_reactionList = self.reactionDict[family][r1][r2][:]
@@ -369,9 +369,9 @@ class CoreEdgeReactionModel:
         # if the family is its own reverse (H-Abstraction) then check the other direction
         if isinstance(family,KineticsFamily) and family.ownReverse: # (family may be a KineticsLibrary)
             # Get the short-list of reactions with the same family, product1 and product2
-            r1 = create_key(products[0])
+            r1 = get_augmented_inchi(products[0])
             if len(products)==1: r2 = None
-            else: r2 = create_key(products[1])
+            else: r2 = get_augmented_inchi(products[1])
             family = rxn.family
             try:
                 my_reactionList.extend(self.reactionDict[family][r1][r2])
@@ -380,8 +380,8 @@ class CoreEdgeReactionModel:
 
         # Now use short-list to check for matches. All should be in same forward direction.
         for rxn0 in my_reactionList:
-            reactants0 = sorted([create_key(reactant) for reactant in rxn0.reactants])
-            products0 = sorted([create_key(product) for product in rxn0.products])
+            reactants0 = sorted([get_augmented_inchi(reactant) for reactant in rxn0.reactants])
+            products0 = sorted([get_augmented_inchi(product) for product in rxn0.products])
 
             if (reactants0 == reactants and products0 == products):
                 if isinstance(family, KineticsLibrary):
@@ -402,23 +402,23 @@ class CoreEdgeReactionModel:
             if isinstance(family0, KineticsLibrary) and family0 != family:
 
                 # First check seed short-list in forward direction
-                r1 = create_key(reactants[0])
+                r1 = get_augmented_inchi(reactants[0])
                 if len(reactants)==1: r2 = None
-                else: r2 = create_key(reactants[1])
+                else: r2 = get_augmented_inchi(reactants[1])
                 try:
                     my_reactionList = self.reactionDict[family0][r1][r2]
                 except KeyError:
                     my_reactionList = []
                 for rxn0 in my_reactionList:
-                    reactants0 = sorted([create_key(reactant) for reactant in rxn0.reactants])
-                    products0 = sorted([create_key(product) for product in rxn0.products])
+                    reactants0 = sorted([get_augmented_inchi(reactant) for reactant in rxn0.reactants])
+                    products0 = sorted([get_augmented_inchi(product) for product in rxn0.products])
                     if (reactants0 == reactants and products0 == products) or \
                         (reactants0 == products and products0 == reactants):
                         return True, rxn0
                 # Now get the seed short-list of the reverse reaction
-                r1 = create_key(products[0])
+                r1 = get_augmented_inchi(products[0])
                 if len(products)==1: r2 = None
-                else: r2 = create_key(products[1])
+                else: r2 = get_augmented_inchi(products[1])
                 try:
                     my_reactionList = self.reactionDict[family0][r1][r2]
                 except KeyError:
@@ -514,8 +514,8 @@ class CoreEdgeReactionModel:
 
         # TODO reactants will be different types (Species, str) depending on whether the reaction is part of core/edge
 
-        r1 = create_key(forward.reactants[0])
-        r2 = None if len(forward.reactants) == 1 else create_key(forward.reactants[1])
+        r1 = get_augmented_inchi(forward.reactants[0])
+        r2 = None if len(forward.reactants) == 1 else get_augmented_inchi(forward.reactants[1])
         family = forward.family
         # make dictionary entries if necessary
         if family not in self.reactionDict:
@@ -1171,12 +1171,12 @@ class CoreEdgeReactionModel:
 
         reactants, products = [], []
         for obj in rxn.reactants:
-            key = create_key(obj)
+            key = get_augmented_inchi(obj)
             spc = self.core_spc_dict[key]
             reactants.append(spc)
 
         for obj in rxn.products:
-            key = create_key(obj)
+            key = get_augmented_inchi(obj)
             spc = self.core_spc_dict[key]
             products.append(spc)
 
@@ -1624,13 +1624,13 @@ class CoreEdgeReactionModel:
         are found in the core species database.
         """   
         for obj in itertools.chain(rxn.reactants, rxn.products):
-            aug_inchi = create_key(obj)
+            aug_inchi = get_augmented_inchi(obj)
             if aug_inchi not in self.core_spc_dict:
                 return False
 
         return True
 
-def create_key(obj):
+def get_augmented_inchi(obj):
     """
     Generates the augmented inchi for 
     objects that are either augmented inchis (strings) or
@@ -1638,5 +1638,7 @@ def create_key(obj):
     """
     if isinstance(obj, str):
         return obj
-    elif isinstance(obj, Species):
+    elif isinstance(obj, (Species, rmgpy.species.Species)):
         return obj.getAugmentedInChI()
+    else:
+        raise Exception('Type not recognized: {}'.format(type(obj)))
