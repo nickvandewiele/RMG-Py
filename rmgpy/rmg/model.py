@@ -1001,11 +1001,7 @@ class CoreEdgeReactionModel:
         """
         Add a species `obj` to the reaction model edge.
         """
-        if isinstance(obj, Species):
-            aug_inchi = obj.getAugmentedInChI()
-        else:
-            aug_inchi = obj
-
+        aug_inchi = get_augmented_inchi(obj)
         self.edge.species.append(aug_inchi)
         
 
