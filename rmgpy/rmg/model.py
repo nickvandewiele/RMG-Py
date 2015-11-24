@@ -689,20 +689,9 @@ class CoreEdgeReactionModel:
             # Recalculate k(T,P) values for modified networks
             self.updateUnimolecularReactionNetworks(database)
             logging.info('')
-            
-        # Check new core and edge reactions for Chemkin duplicates
-        # The same duplicate reaction gets brought into the core
-        # at the same time, so there is no danger in checking all of the edge.
-        newCoreReactions = self.core.reactions[numOldCoreReactions:]
-        newEdgeReactions = self.edge.reactions[numOldEdgeReactions:]
-        checkedReactions = self.core.reactions[:numOldCoreReactions] + self.edge.reactions[:numOldEdgeReactions]
-        from rmgpy.chemkin import markDuplicateReaction
-        for rxn in newCoreReactions:
-            markDuplicateReaction(rxn, checkedReactions)
-            checkedReactions.append(rxn)
-        for rxn in newEdgeReactions:
-            markDuplicateReaction(rxn, checkedReactions)
-            checkedReactions.append(rxn)
+           
+        # self.check_duplicates(numOldCoreReactions, numOldEdgeReactions) 
+        
         self.printEnlargeSummary(
             newCoreSpecies=self.core.species[numOldCoreSpecies:],
             newCoreReactions=self.core.reactions[numOldCoreReactions:],
@@ -1661,6 +1650,26 @@ class CoreEdgeReactionModel:
             return self.reactionDict[family][key1][key2][:]
         except KeyError: # no such short-list: must be new, unless in seed.
             return []
+
+    def check_duplicates(self, numOldCoreReactions, numOldEdgeReactions):
+        """
+        Check new core and edge reactions for Chemkin duplicates
+        The same duplicate reaction gets brought into the core
+        at the same time, so there is no danger in checking all of the edge.
+        """
+        
+        newCoreReactions = self.core.reactions[numOldCoreReactions:]
+        newEdgeReactions = self.edge.reactions[numOldEdgeReactions:]
+        checkedReactions = self.core.reactions[:numOldCoreReactions] + self.edge.reactions[:numOldEdgeReactions]
+
+        from rmgpy.chemkin import markDuplicateReaction
+        for rxn in newCoreReactions:
+            markDuplicateReaction(rxn, checkedReactions)
+            checkedReactions.append(rxn)
+        for rxn in newEdgeReactions:
+            markDuplicateReaction(rxn, checkedReactions)
+            checkedReactions.append(rxn)
+
 
 def generate_reaction_key(rxn, useProducts=False):
     """
