@@ -91,8 +91,6 @@ class AbstractEngine(object):
         else:
             self.db[key] = data
 
-        self.status()
-
     def search_db(self, key):
         """Searches the database and returns the found data, if possible."""
         try:
