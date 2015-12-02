@@ -1,13 +1,50 @@
 import os
 import sys
 import unittest
+import numpy as np
+
+from rmgpy.scoop_framework.framework import TestScoopCommon
+
+try:
+    from scoop import futures, _control, shared
+    from scoop import logger as logging
+    logging.setLevel(10)#10 : debug, 20: info
+except ImportError, e:
+    import logging
+    logging.debug("Could not properly import SCOOP.")
 
 from .input import load
 from .reduction import initialize, compute_conversion
 
 from .optimization import *
 
-class OptimizeTest(unittest.TestCase):
+def funcOptimize(rmg, target_label):
+    reactionModel = rmg.reactionModel
+
+    initialize(rmg.outputDirectory, reactionModel.core.reactions)
+
+    error = OptimizeTest.error
+
+    atol, rtol = rmg.absoluteTolerance, rmg.relativeTolerance
+    index = 0
+    reactionSystem = rmg.reactionSystems[index]
+
+    #compute original target conversion
+    Xorig = compute_conversion(target_label, reactionModel, reactionSystem, index,\
+     rmg.absoluteTolerance, rmg.relativeTolerance)
+
+    # optimize reduction tolerance
+    tol, important_rxns = optimize(target_label, reactionModel, rmg, index, error, Xorig)
+
+    try:
+        assert np.allclose([1e-06], [tol])
+    except AssertionError:
+        return False
+
+    return True
+    
+
+class OptimizeTest(TestScoopCommon):
 
     #MINIMAL
     wd = os.path.join('rmgpy/reduction/test_data/minimal/')
@@ -15,6 +52,13 @@ class OptimizeTest(unittest.TestCase):
     reductionFile = os.path.join(wd, 'reduction_input.py')
     chemkinFile = os.path.join(wd, 'chemkin','chem.inp')
     spc_dict = os.path.join(wd, 'chemkin','species_dictionary.txt')
+
+    def __init__(self, *args, **kwargs):
+        # Parent initialization
+        super(self.__class__, self).__init__(*args, **kwargs)
+        
+        # Only setup the scoop framework once, and not in every test method:
+        super(self.__class__, self).setUp()
 
     @classmethod
     def setUpClass(cls):
@@ -24,27 +68,13 @@ class OptimizeTest(unittest.TestCase):
         cls.target_label = target_label
         cls.error = error
 
-        reactionModel = rmg.reactionModel
-        initialize(rmg.outputDirectory, reactionModel.core.reactions)
-    
+
     def test_optimize(self):
         rmg = OptimizeTest.rmg
         target_label = OptimizeTest.target_label
-        error = OptimizeTest.error
-        reactionModel = rmg.reactionModel
-
-        atol, rtol = rmg.absoluteTolerance, rmg.relativeTolerance
-        index = 0
-        reactionSystem = rmg.reactionSystems[index]
         
-        #compute original target conversion
-        Xorig = compute_conversion(target_label, reactionModel, reactionSystem, index,\
-         rmg.absoluteTolerance, rmg.relativeTolerance)
+        result = futures._startup(funcOptimize, rmg, target_label)
+        self.assertEquals(result, True)  
 
-        # optimize reduction tolerance
-        tol, important_rxns = optimize(target_label, reactionModel, rmg, index, error, Xorig)
-        self.assertAlmostEqual(1e-04, tol)
-
-
-if __name__ == '__main__':
-    unittest.main()
+if __name__ == '__main__' and os.environ.get('IS_ORIGIN', "1") == "1":
+    unittest.main() 

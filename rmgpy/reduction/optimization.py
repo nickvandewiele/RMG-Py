@@ -53,6 +53,17 @@ def optimize(target_label, reactionModel, rmg, reaction_system_index, error, ori
     incr = 10
     tolmax = 1
 
+    """
+    Tolerance to decide whether a reaction is unimportant for the formation/destruction of a species
+
+    Tolerance is a floating point value between 0 and 1.
+
+    A high tolerance means that many reactions will be deemed unimportant, and the reduced model will be drastically
+    smaller.
+
+    A low tolerance means that few reactions will be deemed unimportant, and the reduced model will only differ from the full
+    model by a few reactions.
+    """
     tol = start
     trial = start
 

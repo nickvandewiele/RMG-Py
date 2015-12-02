@@ -33,19 +33,19 @@ import copy
 import os.path
 import numpy as np
 import re
-import logging
-
-#global variables
-reactions = None
-
 
 #local imports
 from rmgpy.chemkin import getSpeciesIdentifier
-
+from rmgpy.scoop_framework.util import broadcast, get, WorkerWrapper, map_
+from rmgpy.scoop_framework.util import logger as logging
 from rmgpy.rmg.main import RMG
 
-from rmgpy.reduction.model import ReductionReaction
-from rmgpy.reduction.rates import isImportant
+from .model import ReductionReaction
+from .rates import isImportant
+
+
+#global variables
+reactions = None
 
 
 def simulate_one(reactionModel, atol, rtol, reactionSystem):
@@ -131,7 +131,27 @@ def initialize(wd, rxns):
     #set global variable here such that functions executed in the root worker have access to it.
     
     reactions = [ReductionReaction(rxn) for rxn in rxns]
+    broadcast(reactions, 'reactions')
+    
 
+def retrieve_reactions():
+    """
+    Reactions can be retrieved either through the global variable 'reactions' if parallel computing
+    is not used.
+
+    With the use of multiple workers, the reactions are retrieved from the previously broadcasted 
+    constant.
+
+    In any case, the references to the original reactions of the reaction model are assumed to be 
+    broken.
+
+    """
+    global reactions    
+
+    broadcasted_reactions = get('reactions')
+    if broadcasted_reactions:
+        reactions = broadcasted_reactions
+    return reactions
 
 def find_important_reactions(rmg, tolerance):
     """
@@ -147,26 +167,12 @@ def find_important_reactions(rmg, tolerance):
     Returns:
         a list of rxns that can be removed.
     """
-
-    global reactions
     
     # run the simulation, creating concentration profiles for each reaction system defined in input.
     simdata = simulate_all(rmg)
 
-    reduce_reactions = reactions
 
-    """
-    Tolerance to decide whether a reaction is unimportant for the formation/destruction of a species
-
-    Tolerance is a floating point value between 0 and 1.
-
-    A high tolerance means that many reactions will be deemed unimportant, and the reduced model will be drastically
-    smaller.
-
-    A low tolerance means that few reactions will be deemed unimportant, and the reduced model will only differ from the full
-    model by a few reactions.
-    """
-
+    reduce_reactions = retrieve_reactions()
 
     def chunks(l, n):
         """Yield successive n-sized chunks from l."""
@@ -178,20 +184,25 @@ def find_important_reactions(rmg, tolerance):
     for chunk in chunks(reduce_reactions,CHUNKSIZE):
         N = len(chunk)
         partial_results = list(
-            map(
-                assess_reaction, chunk, [rmg.reactionSystems] * N, [tolerance] * N, [simdata] * N
+            map_(
+                WorkerWrapper(assess_reaction), chunk, [rmg.reactionSystems] * N, [tolerance] * N, [simdata] * N
                 )
             )
         boolean_array.extend(partial_results)
 
+    """
+    Assuming that the order of the reduced reactions array and the core reactions of the reaction model
+    are identical, iterate over the boolean array and retain those reactions of the reaction model
+    that are deemed 'important'.
+    """
     important_rxns = []
-    for isImport, rxn in zip(boolean_array, reduce_reactions):
+    for isImport, rxn in zip(boolean_array, rmg.reactionModel.core.reactions):
         logging.debug('Is rxn {rxn} important? {isImport}'.format(**locals()))
         if isImport:
             important_rxns.append(rxn)
 
 
-    return [rxn.rmg_reaction for rxn in important_rxns]
+    return important_rxns
 
 def assess_reaction(rxn, reactionSystems, tolerance, data):
     """
@@ -204,11 +215,11 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     evaluates the importance of the reaction at every sample.
 
     """
-    
+
+
     logging.debug('Assessing reaction {}'.format(rxn))
 
-    global reactions
-    
+    reactions = retrieve_reactions()    
 
     # read in the intermediate state variables
 
