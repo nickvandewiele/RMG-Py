@@ -338,4 +338,27 @@ class ConcentrationListener(object):
         self.data = []
 
     def update(self, subject):
-        self.data.append((subject.t , subject.coreSpeciesConcentrations))
+        """
+        Register the time (t) and the species mole fractions at the
+        given time.
+
+        The snapshots variable stores time and Volume as the first two 
+        elements in the array.
+        """
+        data = subject.snapshots
+        self.data = process(data)
+
+def process(data):
+    """
+    The data is structured as a list of lists.
+
+    Each list contains [time, Volume, [species mole fractions]]
+
+    The volume is cut out of each list, the remaining part is stored as a tuple.
+    """
+    processed = []
+
+    for d in data:
+        processed.append((d[0], d[2:]))
+
+    return processed
