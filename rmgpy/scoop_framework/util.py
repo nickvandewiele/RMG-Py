@@ -42,10 +42,13 @@ try:
     from scoop.futures import map
     from scoop import shared
     from scoop import logger as logging
-
+    logging.setLevel(20)#10 : debug, 20: info
 except ImportError:
     import logging as logging
     logging.debug("Could not properly import SCOOP.")
+
+
+logger = logging
 
 def warnScoopStartedProperly(func):
     @wraps(func)
