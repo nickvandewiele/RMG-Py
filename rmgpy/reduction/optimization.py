@@ -28,10 +28,10 @@
 #
 ################################################################################
 
-import logging
 import numpy as np
 
-from rmgpy.reduction.reduction import reduce_model
+from reduction import reduce_model
+from rmgpy.scoop_framework.util import logger as logging
 
 def optimize(target_label, reactionModel, rmg, reaction_system_index, error, orig_conv):
     """

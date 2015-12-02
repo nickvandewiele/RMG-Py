@@ -30,12 +30,13 @@
 
 import sys
 import os.path
-import logging
 
-from rmgpy.reduction.input import load
-from rmgpy.reduction.output import write_model
-from rmgpy.reduction.optimization import optimize
-from rmgpy.reduction.reduction import compute_conversion, initialize
+from input import load
+from output import write_model
+from optimization import optimize
+from reduction import compute_conversion, initialize
+
+from rmgpy.scoop_framework.util import logger as logging
 
 def main():
     

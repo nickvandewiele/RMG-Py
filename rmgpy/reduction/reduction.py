@@ -40,8 +40,8 @@ from rmgpy.scoop_framework.util import broadcast, get, WorkerWrapper, map_
 from rmgpy.scoop_framework.util import logger as logging
 from rmgpy.rmg.main import RMG
 
-from .model import ReductionReaction
-from .rates import isImportant
+from model import ReductionReaction
+from rates import isImportant
 
 
 #global variables

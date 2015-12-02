@@ -29,7 +29,7 @@
 ################################################################################
 
 import numpy as np
-import logging
+from rmgpy.scoop_framework.util import logger as logging
 
 CLOSE_TO_ZERO = 1E-20
 

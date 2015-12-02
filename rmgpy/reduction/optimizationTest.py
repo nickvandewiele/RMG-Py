@@ -4,11 +4,10 @@ import unittest
 import numpy as np
 
 from rmgpy.scoop_framework.framework import TestScoopCommon
+from rmgpy.scoop_framework.util import logger as logging
 
 try:
     from scoop import futures, _control, shared
-    from scoop import logger as logging
-    logging.setLevel(10)#10 : debug, 20: info
 except ImportError, e:
     import logging
     logging.debug("Could not properly import SCOOP.")

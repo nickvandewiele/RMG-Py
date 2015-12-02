@@ -28,9 +28,9 @@
 #
 ################################################################################
 
-import logging
-
 from rmgpy.chemkin import writeKineticsEntry
+
+from rmgpy.scoop_framework.util import logger as logging
 
 def write_model(rmg, chemkin_name='reduced_reactions.inp'):
     """
