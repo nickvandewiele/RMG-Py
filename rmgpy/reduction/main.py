@@ -63,12 +63,13 @@ def main():
      rmg.absoluteTolerance, rmg.relativeTolerance)
 
     logging.info('Observables of original model:'.format())
-    for target, obs in zip(targets, observables):
-        logging.info('{}: {:.2f}%'.format(target, observable))
+    for target, observable in zip(targets, observables):
+        logging.info('{}: {:.2f}%'.format(target, observable * 100))
 
     # optimize reduction tolerance
     tol, important_reactions = optimize(targets, reactionModel, rmg, index, error, observables)
-    logging.info('Optimized tolerance: {:.0E}'.format(tol))
+    logging.info('Optimized tolerance: {:.0E}'.format(10**tol))
+    logging.info('Number of reactions in optimized reduced model : {}'.format(len(important_reactions)))
 
     # plug the important reactions into the RMG object and write:
     rmg.reactionModel.core.reactions = important_reactions
