@@ -46,7 +46,7 @@ def optimize(target_label, reactionModel, rmg, reaction_system_index, error, ori
     """
 
 
-    low = -20 
+    low = -30 
     high = 0
 
     """
