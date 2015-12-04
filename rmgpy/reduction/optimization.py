@@ -121,7 +121,8 @@ def bisect(low, high, error, targets, reactionModel, rmg, reaction_system_index,
         old_trial = low
 
     if not important_reactions:
-        raise Exception("Could not find a good guess...")
+        logging.error("Could not find a good guess...")
+        important_reactions = []
 
     logging.info('Final deviations: '.format())
     for dev, target in zip(final_devs, targets):
