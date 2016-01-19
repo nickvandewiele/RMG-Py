@@ -429,8 +429,7 @@ cdef class ReactionSystem(DASx):
 
 
             snapshot = [self.t, self.V]
-            snapshot.extend(y_coreSpecies / numpy.sum(y_coreSpecies))
-            self.snapshots.append(snapshot)            
+            snapshot.extend(y_coreSpecies / numpy.sum(y_coreSpecies))  
 
             # Get the characteristic flux
             charRate = sqrt(numpy.sum(self.coreSpeciesRates * self.coreSpeciesRates))
@@ -516,7 +515,11 @@ cdef class ReactionSystem(DASx):
             # Increment destination step time if necessary
             if self.t >= 0.9999 * stepTime:
                 stepTime *= 10.0
-                
+            
+            # add a copy of the core reaction rates to the current snapshot:
+            snapshot.append(self.coreReactionRates[:])
+
+            self.snapshots.append(snapshot)
         
         # notify reaction system listeners
         self.notify()
