@@ -408,13 +408,13 @@ def process(data):
     """
     The data is structured as a list of lists.
 
-    Each list contains [time, Volume, [species mole fractions]]
+    Each list contains [time, Volume, [species mole fractions], [core reaction rates]]
 
     The volume is cut out of each list, the remaining part is stored as a tuple.
     """
     processed = []
 
     for d in data:
-        processed.append((d[0], d[2:]))
+        processed.append((d[0], d[2:-1], d[-1]))
 
     return processed
