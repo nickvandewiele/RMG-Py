@@ -436,3 +436,26 @@ def process(data):
         processed.append(reactionSystemData)
 
     return processed
+
+def getData(name):
+    """
+    Returns the RMG input object that corresponds
+    to the parameter name.
+
+    First, the module level is queried. If this variable
+    is empty, the broadcasted variables are queried.
+    """
+
+    global reactions    
+
+    if name == 'reactions':
+        if reactions:
+            return reactions
+        else:
+            return get(name)
+    
+    else:
+        raise Exception('Unrecognized keyword: {}'.format(name))
+
+
+    raise Exception('Could not get variable with name: {}'.format(name))
