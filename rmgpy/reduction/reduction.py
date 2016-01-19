@@ -47,6 +47,12 @@ from rates import isImportant
 #global variables
 reactions = None
 
+"""
+Species names are a list of labels of species,
+in the same order as the core species list.
+"""
+species_names = None
+
 class TemporalReactionSystemData(object):
     """
 
@@ -81,16 +87,6 @@ def simulate_one(reactionModel, atol, rtol, reactionSystem):
     #register as a listener
     listener = ReactionSystemListener()
 
-    coreSpecies = reactionModel.core.species
-    regex = r'\([0-9]+\)'#cut of '(one or more digits)'
-    species_names = []
-    for spc in coreSpecies:
-        name = getSpeciesIdentifier(spc)
-        name_cutoff = re.split(regex, name)[0]
-        species_names.append(name_cutoff)
-
-    listener.species_names = species_names
-
     reactionSystem.attach(listener)
 
     pdepNetworks = []
@@ -115,7 +111,7 @@ def simulate_one(reactionModel, atol, rtol, reactionSystem):
     #unregister as a listener
     reactionSystem.detach(listener) 
 
-    return listener.species_names, listener.data
+    return listener.data
 
 def simulate_all(rmg):
     """
@@ -124,7 +120,10 @@ def simulate_all(rmg):
 
     Each element i of the data corresponds to a reaction system.
     """
+
     reactionModel = rmg.reactionModel
+
+    retrieveSpeciesNames(reactionModel.core.species)
 
     data = []
 
@@ -232,14 +231,15 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
 
     logging.debug('Assessing reaction {}'.format(rxn))
 
-    reactions = retrieve_reactions()    
+    reactions = retrieve_reactions()  
+    species_names = getData('species_names')  
 
     # read in the intermediate state variables
 
     for datum, reactionSystem in zip(data, reactionSystems):    
         T, P = reactionSystem.T.value_si, reactionSystem.P.value_si
         
-        species_names, reactionSystemData = datum
+        reactionSystemData = datum
 
         # take N evenly spaced indices from the table with simulation results:
 
@@ -403,7 +403,6 @@ class ReactionSystemListener(object):
     """Returns the species concentration profiles at each time step."""
 
     def __init__(self):
-        self.species_names = []
         self.data = []
 
     def update(self, subject):
@@ -446,11 +445,17 @@ def getData(name):
     is empty, the broadcasted variables are queried.
     """
 
-    global reactions    
+    global reactions, species_names    
 
     if name == 'reactions':
         if reactions:
             return reactions
+        else:
+            return get(name)
+    
+    elif name == 'species_names':
+        if species_names:
+            return species_names
         else:
             return get(name)
     
@@ -459,3 +464,20 @@ def getData(name):
 
 
     raise Exception('Could not get variable with name: {}'.format(name))
+
+def retrieveSpeciesNames(speciesList):
+    """
+    Put the labels of the parameter species list in a list,
+    and broadcast it.
+    """
+    global species_names
+
+    regex = r'\([0-9]+\)'#cut of '(one or more digits)'
+    
+    species_names = []
+    for spc in speciesList:
+        name = getSpeciesIdentifier(spc)
+        name_cutoff = re.split(regex, name)[0]
+        species_names.append(name_cutoff)
+
+    broadcast(species_names, 'species_names')
