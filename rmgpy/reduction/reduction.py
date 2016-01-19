@@ -47,15 +47,14 @@ from rates import isImportant
 #global variables
 reactions = None
 
-
-class ReactionSystemData(object):
+class TemporalReactionSystemData(object):
     """
 
     Class to store temporal data from RMG-Py's ReactionSystem.
 
     """
     def __init__(self, t, V, coreSpeciesConcentrations, coreReactionRates):
-        super(ReactionSystemData, self).__init__()
+        super(TemporalReactionSystemData, self).__init__()
         self.t = t
         self.V = V
         self.coreSpeciesConcentrations = coreSpeciesConcentrations
@@ -428,7 +427,7 @@ def process(data):
     processed = []
 
     for d in data:
-        reactionSystemData = ReactionSystemData(
+        reactionSystemData = TemporalReactionSystemData(
             d[0],
             d[1], 
             d[2:-1],
