@@ -67,7 +67,7 @@ def simulate_one(reactionModel, atol, rtol, reactionSystem):
     """
 
     #register as a listener
-    listener = ConcentrationListener()
+    listener = ReactionSystemListener()
 
     coreSpecies = reactionModel.core.species
     regex = r'\([0-9]+\)'#cut of '(one or more digits)'
@@ -386,7 +386,7 @@ def reduce_model(tolerance, targets, reactionModel, rmg, reaction_system_index):
 
     return observables, important_reactions
 
-class ConcentrationListener(object):
+class ReactionSystemListener(object):
     """Returns the species concentration profiles at each time step."""
 
     def __init__(self):
