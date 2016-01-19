@@ -48,6 +48,19 @@ from rates import isImportant
 reactions = None
 
 
+class ReactionSystemData(object):
+    """
+
+    Class to store temporal data from RMG-Py's ReactionSystem.
+
+    """
+    def __init__(self, t, V, coreSpeciesConcentrations, coreReactionRates):
+        super(ReactionSystemData, self).__init__()
+        self.t = t
+        self.V = V
+        self.coreSpeciesConcentrations = coreSpeciesConcentrations
+        self.coreReactionRates = coreReactionRates
+            
 def simulate_one(reactionModel, atol, rtol, reactionSystem):
     """
 
@@ -208,8 +221,8 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     """
     Returns whether the reaction is important or not in the reactions.
 
-    It iterates over the reaction systems, and loads the concentration profile 
-    of each reaction system.
+    It iterates over the reaction systems, and loads the reaction system
+    data of each reaction system.
 
     It iterates over a number of samples in profile and 
     evaluates the importance of the reaction at every sample.
@@ -226,7 +239,7 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     for datum, reactionSystem in zip(data, reactionSystems):    
         T, P = reactionSystem.T.value_si, reactionSystem.P.value_si
         
-        species_names, profile = datum
+        species_names, reactionSystemData = datum
 
         # take N evenly spaced indices from the table with simulation results:
 
@@ -240,25 +253,25 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
         The more timesteps, the less chance we have to remove an important reactions, but the more simulations
         need to be carried out.
         """
-        
-        timesteps = len(profile) / 2
+        timesteps = len(reactionSystemData) / 2
         logging.debug('Evaluating the importance of a reaction at {} time samples.'.format(timesteps))
 
-        assert timesteps <= len(profile)
-        indices = map(int, np.linspace(0, len(profile)-1, num = timesteps))
+        assert timesteps <= len(reactionSystemData)
+        indices = map(int, np.linspace(0, len(reactionSystemData)-1, num = timesteps))
         for index in indices:
-            assert profile[index] is not None
-            timepoint, coreSpeciesConcentrations = profile[index]
+            assert reactionSystemData[index] is not None
+            timepoint = reactionSystemData[index].t
+            concs = reactionSystemData[index].coreSpeciesConcentrations
 
-            coreSpeciesConcentrations = {key: float(value) for (key, value) in zip(species_names, coreSpeciesConcentrations)}
+            concs = {key: float(value) for (key, value) in zip(species_names, concs)}
             
             for species_i in rxn.reactants:
-                if isImportant(rxn, species_i, reactions, 'reactant', tolerance, T, P, coreSpeciesConcentrations):
+                if isImportant(rxn, species_i, reactions, 'reactant', tolerance, T, P, concs):
                     return True
 
             #only continue if the reaction is not important yet.
             for species_i in rxn.products:
-                if isImportant(rxn, species_i, reactions, 'product', tolerance, T, P, coreSpeciesConcentrations):
+                if isImportant(rxn, species_i, reactions, 'product', tolerance, T, P, concs):
                     return True
 
     return False
@@ -415,6 +428,12 @@ def process(data):
     processed = []
 
     for d in data:
-        processed.append((d[0], d[2:-1], d[-1]))
+        reactionSystemData = ReactionSystemData(
+            d[0],
+            d[1], 
+            d[2:-1],
+            d[-1]
+            )
+        processed.append(reactionSystemData)
 
     return processed
