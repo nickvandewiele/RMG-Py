@@ -424,7 +424,6 @@ def process(data):
 
     Each list contains [time, Volume, [species mole fractions], [core reaction rates]]
 
-    The volume is cut out of each list, the remaining part is stored as a tuple.
     """
     processed = []
 
