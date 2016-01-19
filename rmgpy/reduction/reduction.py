@@ -180,12 +180,13 @@ def find_important_reactions(rmg, tolerance):
     Returns:
         a list of rxns that can be removed.
     """
-    
+    global reactions
+
     # run the simulation, creating concentration profiles for each reaction system defined in input.
     simdata = simulate_all(rmg)
 
 
-    reduce_reactions = retrieve_reactions()
+    reduce_reactions = reactions
 
     def chunks(l, n):
         """Yield successive n-sized chunks from l."""
