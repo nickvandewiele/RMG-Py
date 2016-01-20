@@ -53,6 +53,12 @@ in the same order as the core species list.
 """
 species_names = None
 
+"""
+A list of reaction system data that stores data retrieved from 
+solving the corresponding reaction systems.
+"""
+reactionSystemData = None
+
 class TemporalReactionSystemData(object):
     """
 
@@ -61,8 +67,8 @@ class TemporalReactionSystemData(object):
     """
     def __init__(self, t, V, coreSpeciesConcentrations, coreReactionRates):
         super(TemporalReactionSystemData, self).__init__()
-        self.t = t
-        self.V = V
+        self.t = t # time
+        self.V = V # volume
         self.coreSpeciesConcentrations = coreSpeciesConcentrations
         self.coreReactionRates = coreReactionRates
             
@@ -85,7 +91,10 @@ def simulate_one(reactionModel, atol, rtol, reactionSystem):
     """
 
     #register as a listener
-    listener = ReactionSystemListener()
+    listener = ReactionSystemListener(
+        reactionSystem.T.value_si, 
+        reactionSystem.P.value_si
+        )
 
     reactionSystem.attach(listener)
 
@@ -111,7 +120,7 @@ def simulate_one(reactionModel, atol, rtol, reactionSystem):
     #unregister as a listener
     reactionSystem.detach(listener) 
 
-    return listener.data
+    return listener
 
 def simulate_all(rmg):
     """
@@ -121,17 +130,20 @@ def simulate_all(rmg):
     Each element i of the data corresponds to a reaction system.
     """
 
+    global reactionSystemData
+
     reactionModel = rmg.reactionModel
 
     retrieveSpeciesNames(reactionModel.core.species)
 
-    data = []
+    reactionSystemData = []
 
     atol, rtol = rmg.absoluteTolerance, rmg.relativeTolerance
     for reactionSystem in rmg.reactionSystems:
-        data.append(simulate_one(reactionModel, atol, rtol, reactionSystem))
+        listener = simulate_one(reactionModel, atol, rtol, reactionSystem)
+        reactionSystemData.append(listener)
 
-    return data
+    broadcast(reactionSystemData, 'reactionSystemData')
         
 
 def initialize(wd, rxns):
@@ -181,8 +193,7 @@ def find_important_reactions(rmg, tolerance):
     global reactions
 
     # run the simulation, creating concentration profiles for each reaction system defined in input.
-    simdata = simulate_all(rmg)
-
+    simulate_all(rmg)
 
     reduce_reactions = reactions
 
@@ -197,7 +208,7 @@ def find_important_reactions(rmg, tolerance):
         N = len(chunk)
         partial_results = list(
             map_(
-                WorkerWrapper(assess_reaction), chunk, [rmg.reactionSystems] * N, [tolerance] * N, [simdata] * N
+                WorkerWrapper(assess_reaction), chunk, [tolerance] * N
                 )
             )
         boolean_array.extend(partial_results)
@@ -216,7 +227,7 @@ def find_important_reactions(rmg, tolerance):
 
     return important_rxns
 
-def assess_reaction(rxn, reactionSystems, tolerance, data):
+def assess_reaction(rxn, tolerance):
     """
     Returns whether the reaction is important or not in the reactions.
 
@@ -232,14 +243,16 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
     logging.debug('Assessing reaction {}'.format(rxn))
 
     reactions = retrieve_reactions()  
-    species_names = getData('species_names')  
+    species_names = getData('species_names') 
+
+    reactionSystemData = getData('reactionSystemData') 
 
     # read in the intermediate state variables
 
-    for datum, reactionSystem in zip(data, reactionSystems):    
-        T, P = reactionSystem.T.value_si, reactionSystem.P.value_si
-        
-        reactionSystemData = datum
+    for listener in reactionSystemData:    
+        T, P = listener.T, listener.P        
+
+        data = listener.data
 
         # take N evenly spaced indices from the table with simulation results:
 
@@ -253,15 +266,15 @@ def assess_reaction(rxn, reactionSystems, tolerance, data):
         The more timesteps, the less chance we have to remove an important reactions, but the more simulations
         need to be carried out.
         """
-        timesteps = len(reactionSystemData) / 2
+        timesteps = len(data) / 2
         logging.debug('Evaluating the importance of a reaction at {} time samples.'.format(timesteps))
 
-        assert timesteps <= len(reactionSystemData)
-        indices = map(int, np.linspace(0, len(reactionSystemData)-1, num = timesteps))
+        assert timesteps <= len(data)
+        indices = map(int, np.linspace(0, len(data)-1, num = timesteps))
         for index in indices:
-            assert reactionSystemData[index] is not None
-            timepoint = reactionSystemData[index].t
-            concs = reactionSystemData[index].coreSpeciesConcentrations
+            assert data[index] is not None
+            timepoint = data[index].t
+            concs = data[index].coreSpeciesConcentrations
 
             concs = {key: float(value) for (key, value) in zip(species_names, concs)}
             
@@ -402,7 +415,9 @@ def reduce_model(tolerance, targets, reactionModel, rmg, reaction_system_index):
 class ReactionSystemListener(object):
     """Returns the species concentration profiles at each time step."""
 
-    def __init__(self):
+    def __init__(self, T, P):
+        self.T = T
+        self.P = P
         self.data = []
 
     def update(self, subject):
@@ -445,7 +460,7 @@ def getData(name):
     is empty, the broadcasted variables are queried.
     """
 
-    global reactions, species_names    
+    global reactions, species_names, reactionSystemData   
 
     if name == 'reactions':
         if reactions:
@@ -458,7 +473,13 @@ def getData(name):
             return species_names
         else:
             return get(name)
-    
+
+    elif name == 'reactionSystemData':
+        if reactionSystemData:
+            return reactionSystemData
+        else:
+            return get(name)
+
     else:
         raise Exception('Unrecognized keyword: {}'.format(name))
 
@@ -473,7 +494,7 @@ def retrieveSpeciesNames(speciesList):
     global species_names
 
     regex = r'\([0-9]+\)'#cut of '(one or more digits)'
-    
+
     species_names = []
     for spc in speciesList:
         name = getSpeciesIdentifier(spc)
