@@ -43,11 +43,11 @@ try:
     from scoop import futures
     from scoop.futures import map
     from scoop import shared
-    from scoop import logger as scooplogger
-    logger = scooplogger
+    from scoop import logger as logging
+    logger = logging
     # logger.setLevel(20)#10 : debug, 20: info
 except ImportError:
-    import logging as logging
+    import logging
     logger = logging.getLogger()
     logging.debug("Could not properly import SCOOP.")
 
