@@ -153,7 +153,7 @@ def initialize(wd, rxns):
     
     #set global variable here such that functions executed in the root worker have access to it.
     
-    reactions = [ReductionReaction(rxn) for rxn in rxns]
+    reactions = [(ReductionReaction(rxn), i) for i, rxn in enumerate(rxns)]
     broadcast(reactions, 'reactions')
     
 
@@ -227,7 +227,7 @@ def find_important_reactions(rmg, tolerance):
 
     return important_rxns
 
-def assess_reaction(rxn, tolerance):
+def assess_reaction(rxn_item, tolerance):
     """
     Returns whether the reaction is important or not in the reactions.
 
@@ -238,7 +238,7 @@ def assess_reaction(rxn, tolerance):
     evaluates the importance of the reaction at every sample.
 
     """
-
+    rxn, reaction_index = rxn_item
 
     logging.debug('Assessing reaction {}'.format(rxn))
 
@@ -279,12 +279,12 @@ def assess_reaction(rxn, tolerance):
             concs = {key: float(value) for (key, value) in zip(species_names, concs)}
             
             for species_i in rxn.reactants:
-                if isImportant(rxn, species_i, reactions, 'reactant', tolerance, T, P, concs):
+                if isImportant(rxn_item, species_i, reactions, 'reactant', tolerance, T, P, concs):
                     return True
 
             #only continue if the reaction is not important yet.
             for species_i in rxn.products:
-                if isImportant(rxn, species_i, reactions, 'product', tolerance, T, P, concs):
+                if isImportant(rxn_item, species_i, reactions, 'product', tolerance, T, P, concs):
                     return True
 
     return False

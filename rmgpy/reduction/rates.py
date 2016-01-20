@@ -106,7 +106,7 @@ def calc_Rf(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentratio
     """
     rate = 0.0
 
-    for reaction in reactions:
+    for reaction, i in reactions:
         molecules = reaction.products if formation_or_consumption == 'formation:' else reaction.reactants
         labels = [mol.label for mol in molecules]
         if spc_i.label in labels:
@@ -149,7 +149,7 @@ def calc_Ri(spc_i,rij, reactions, reactant_or_product, T, P, coreSpeciesConcentr
         """What happens when Rf ~ Rb <<< 1?"""
         return max(abs(Rf),abs(Rb))
 
-def isImportant(rxn, species_i, reactions, reactant_or_product, tolerance, T, P, coreSpeciesConcentrations):
+def isImportant(rxn_item, species_i, reactions, reactant_or_product, tolerance, T, P, coreSpeciesConcentrations):
     """
     This function computes:
     - Ri = R(species_i)
@@ -170,7 +170,7 @@ def isImportant(rxn, species_i, reactions, reactant_or_product, tolerance, T, P,
     remove = False
     """
 
-
+    rxn, i = rxn_item
     rij = calc_rij(rxn, species_i, reactant_or_product, T, P, coreSpeciesConcentrations) 
     Ri = calc_Ri(species_i, rij, reactions, reactant_or_product, T, P, coreSpeciesConcentrations)
 
