@@ -91,7 +91,7 @@ def calc_rij(rxn_j, spc_i, isReactant, T, P, coreSpeciesConcentrations):
     return rij
 
 
-def calc_Rf(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentrations, formation_or_consumption):
+def calc_Rf(spc_i, reactant_or_product, T, P, coreSpeciesConcentrations, formation_or_consumption):
     """
     Calculates the total rate of formation/consumption of species i.
 
@@ -104,7 +104,12 @@ def calc_Rf(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentratio
 
     units of rate: mol/(m^3.s)
     """
+
+    from reduction import retrieve_reactions
+    
     rate = 0.0
+
+    reactions = retrieve_reactions()
 
     for reaction, i in reactions:
         molecules = reaction.products if formation_or_consumption == 'formation:' else reaction.reactants
@@ -117,16 +122,16 @@ def calc_Rf(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentratio
 
     return rate
     
-def calc_Rf_closure(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentrations):
+def calc_Rf_closure(spc_i, reactant_or_product, T, P, coreSpeciesConcentrations):
     """
     Closure to avoid replicating function calls to calc_Rf.
     """
     def myfilter(formation_or_consumption):
-        return calc_Rf(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentrations, formation_or_consumption)
+        return calc_Rf(spc_i, reactant_or_product, T, P, coreSpeciesConcentrations, formation_or_consumption)
     
     return myfilter
 
-def calc_Ri(spc_i,rij, reactions, reactant_or_product, T, P, coreSpeciesConcentrations):
+def calc_Ri(spc_i,rij, reactant_or_product, T, P, coreSpeciesConcentrations):
     """
 
     Checks whether the sign of rij to decide to compute the
@@ -135,7 +140,7 @@ def calc_Ri(spc_i,rij, reactions, reactant_or_product, T, P, coreSpeciesConcentr
     units of rate: mol/(m^3.s)
     """
 
-    f_closure = calc_Rf_closure(spc_i, reactions, reactant_or_product, T, P, coreSpeciesConcentrations)
+    f_closure = calc_Rf_closure(spc_i, reactant_or_product, T, P, coreSpeciesConcentrations)
 
     if rij > 0:
         return f_closure('formation')
@@ -149,7 +154,7 @@ def calc_Ri(spc_i,rij, reactions, reactant_or_product, T, P, coreSpeciesConcentr
         """What happens when Rf ~ Rb <<< 1?"""
         return max(abs(Rf),abs(Rb))
 
-def isImportant(rxn_item, species_i, reactions, reactant_or_product, tolerance, T, P, coreSpeciesConcentrations):
+def isImportant(rxn_item, species_i, reactant_or_product, tolerance, T, P, coreSpeciesConcentrations):
     """
     This function computes:
     - Ri = R(species_i)
@@ -172,7 +177,7 @@ def isImportant(rxn_item, species_i, reactions, reactant_or_product, tolerance, 
 
     rxn, i = rxn_item
     rij = calc_rij(rxn, species_i, reactant_or_product, T, P, coreSpeciesConcentrations) 
-    Ri = calc_Ri(species_i, rij, reactions, reactant_or_product, T, P, coreSpeciesConcentrations)
+    Ri = calc_Ri(species_i, rij, reactant_or_product, T, P, coreSpeciesConcentrations)
 
     logging.debug("rij: {rij}, Ri: {Ri}, rxn: {rxn}, species: {species_i}, reactant: {reactant_or_product}, tol: {tolerance}"\
     .format(**locals()))

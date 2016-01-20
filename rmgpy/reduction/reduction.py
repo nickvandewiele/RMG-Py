@@ -241,8 +241,7 @@ def assess_reaction(rxn_item, tolerance):
     rxn, reaction_index = rxn_item
 
     logging.debug('Assessing reaction {}'.format(rxn))
-
-    reactions = retrieve_reactions()  
+  
     species_names = getData('species_names') 
 
     reactionSystemData = getData('reactionSystemData') 
@@ -279,12 +278,12 @@ def assess_reaction(rxn_item, tolerance):
             concs = {key: float(value) for (key, value) in zip(species_names, concs)}
             
             for species_i in rxn.reactants:
-                if isImportant(rxn_item, species_i, reactions, 'reactant', tolerance, T, P, concs):
+                if isImportant(rxn_item, species_i, 'reactant', tolerance, T, P, concs):
                     return True
 
             #only continue if the reaction is not important yet.
             for species_i in rxn.products:
-                if isImportant(rxn_item, species_i, reactions, 'product', tolerance, T, P, concs):
+                if isImportant(rxn_item, species_i, 'product', tolerance, T, P, concs):
                     return True
 
     return False
