@@ -1082,6 +1082,8 @@ class KineticsFamily(Database):
         returns a list of the product structures.
         """
         
+        maps = [convertToAtomMapping(m, reactantStructures) for m in maps]
+
         productStructures = None
 
         # Clear any previous atom labeling from all reactant structures
@@ -1190,10 +1192,16 @@ class KineticsFamily(Database):
         if isinstance(struct, LogicNode):
             mappings = []
             for child_structure in struct.getPossibleStructures(self.groups.entries):
-                mappings.extend(reactant.findSubgraphIsomorphisms(child_structure))
+                maps = reactant.findSubgraphIsomorphisms(child_structure)
+                intmaps = [convertToIntMapping(m, reactant) for m in maps]
+                mappings.extend(intmaps)
             return mappings
         elif isinstance(struct, Group):
-            return reactant.findSubgraphIsomorphisms(struct)
+            maps = reactant.findSubgraphIsomorphisms(struct)
+
+            intmaps = [convertToIntMapping(m, reactant) for m in maps]
+
+            return intmaps
 
     def generateReactions(self, reactants):
         """
@@ -1307,6 +1315,7 @@ class KineticsFamily(Database):
             for molecule in reactants[0]:
 
                 mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
+                mappings = [{0: m} for m in mappings]
                 for map in mappings:
                     reactantStructures = [molecule]
                     try:
@@ -1330,7 +1339,9 @@ class KineticsFamily(Database):
 
                     # Reactants stored as A + B
                     mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[0])
+                    mappingsA = [createMolMap(m, 0) for m in mappingsA]
                     mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[1])
+                    mappingsB = [createMolMap(m, 1) for m in mappingsB]
 
                     # Iterate over each pair of matches (A, B)
                     for mapA in mappingsA:
@@ -1350,7 +1361,9 @@ class KineticsFamily(Database):
 
                         # Reactants stored as B + A
                         mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[1])
+                        mappingsA = [createMolMap(m, 0) for m in mappingsA]
                         mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[0])
+                        mappingsB = [createMolMap(m, 1) for m in mappingsB]
 
                         # Iterate over each pair of matches (A, B)
                         for mapA in mappingsA:
@@ -1734,3 +1747,42 @@ class KineticsFamily(Database):
 
         return template
 
+def convertToIntMapping(mapping, molecule):
+    """
+    Convert a mapping from
+    Atom in Molecule -> GroupAtom
+    to
+    index of Atom in Molecule -> GroupAtom
+
+    """
+    intmapping = {}
+    for k,v in mapping.iteritems():
+        intmapping[molecule.atoms.index(k)] = v
+
+    return intmapping
+
+def convertToAtomMapping(molmapping, molecules):
+    """
+    Convert a molmapping from
+
+    index of molecule -> index map with
+
+    index map:
+    index of Atom in molecule i -> GroupAtom
+
+    to an atom mapping :
+    atom map:
+    Atom -> GroupAtom
+
+    """
+    atmap = {}
+
+    for i, imap in molmapping.iteritems():
+        mol = molecules[i]
+        for index, groupAt in imap.iteritems():
+            atmap[mol.atoms[index]] = groupAt
+
+    return atmap
+
+def createMolMap(mapping, molIndex):
+    return {molIndex: mapping}
