@@ -117,3 +117,23 @@ def deflate(reactionList, reactants, reactantIndices):
         # rxn.pairs = [(molDict[reactant],molDict[product]) for reactant, product in rxn.pairs]
 
     return reactionList
+
+def generate(mappings, molecules, direction, fam):
+    """
+    direction = forward / reverse
+    fam = label of the family
+
+    """
+    from rmgpy.data.base import ForbiddenStructureException
+
+    families = getDB('kinetics').families
+    family = families[fam]
+
+    try:
+        productStructures = family.generateProductStructures(molecules, mappings, direction)
+    except ForbiddenStructureException:
+        pass
+    else:
+        if productStructures is not None:
+            rxn = family.createReaction(molecules, productStructures, direction)
+            return rxn if rxn else None

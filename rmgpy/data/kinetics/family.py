@@ -36,6 +36,7 @@ import os.path
 import logging
 import codecs
 from copy import deepcopy
+import itertools
 
 from rmgpy.constraints import failsSpeciesConstraints
 from rmgpy.data.base import Database, Entry, LogicNode, LogicOr, ForbiddenStructures,\
@@ -44,6 +45,8 @@ from rmgpy.reaction import Reaction
 from rmgpy.kinetics import Arrhenius, ArrheniusEP
 from rmgpy.molecule import Bond, GroupBond, Group, Molecule
 from rmgpy.species import Species
+
+from rmgpy.scoop_framework.util import map_, WorkerWrapper
 
 from .common import KineticsError, UndeterminableKineticsError, saveEntry
 from .depository import KineticsDepository
@@ -1074,7 +1077,7 @@ class KineticsFamily(Database):
         # Return the product structures
         return productStructures
 
-    def __generateProductStructures(self, reactantStructures, maps, forward):
+    def generateProductStructures(self, reactantStructures, maps, forward):
         """
         For a given set of `reactantStructures` and a given set of `maps`,
         generate and return the corresponding product structures. The
@@ -1146,7 +1149,7 @@ class KineticsFamily(Database):
             return True
         return False
 
-    def __createReaction(self, reactants, products, isForward):
+    def createReaction(self, reactants, products, isForward):
         """
         Create and return a new :class:`Reaction` object containing the
         provided `reactants` and `products` as lists of :class:`Molecule`
@@ -1182,7 +1185,7 @@ class KineticsFamily(Database):
         
         return reaction
 
-    def __matchReactantToTemplate(self, reactant, templateReactant):
+    def matchReactantToTemplate(self, reactant, templateReactant):
         """
         Return ``True`` if the provided reactant matches the provided
         template reactant and ``False`` if not, along with a complete list of the
@@ -1287,7 +1290,7 @@ class KineticsFamily(Database):
         be a list of :class:`Molecule` objects, each representing a resonance
         isomer of the species of interest.
         """
-
+        from rmgpy.rmg.react import generate
         rxnList = []; speciesList = []
 
         # Wrap each reactant in a list if not already done (this is done to 
@@ -1317,17 +1320,18 @@ class KineticsFamily(Database):
             # Iterate over all resonance isomers of the reactant
             for molecule in reactants[0]:
 
-                mappings = self.__matchReactantToTemplate(molecule, template.reactants[0])
+                mappings = self.matchReactantToTemplate(molecule, template.reactants[0])
                 mappings = [{0: m} for m in mappings]
+
                 for map in mappings:
                     reactantStructures = [molecule]
                     try:
-                        productStructures = self.__generateProductStructures(reactantStructures, [map], forward)
+                        productStructures = self.generateProductStructures(reactantStructures, [map], forward)
                     except ForbiddenStructureException:
                         pass
                     else:
                         if productStructures is not None:
-                            rxn = self.__createReaction(reactantStructures, productStructures, forward)
+                            rxn = self.createReaction(reactantStructures, productStructures, forward)
                             if rxn: rxnList.append(rxn)
 
         # Bimolecular reactants: A + B --> products
@@ -1335,51 +1339,53 @@ class KineticsFamily(Database):
 
             moleculesA = reactants[0]
             moleculesB = reactants[1]
-
             # Iterate over all resonance isomers of the reactant
             for moleculeA in moleculesA:
                 for moleculeB in moleculesB:
-
+                    reactantStructures = [moleculeA, moleculeB]
                     # Reactants stored as A + B
-                    mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[0])
-                    mappingsA = [createMolMap(m, 0) for m in mappingsA]
-                    mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[1])
-                    mappingsB = [createMolMap(m, 1) for m in mappingsB]
+                    mappingsA = self.matchReactantToTemplate(moleculeA, template.reactants[0])
+                    mappingsA = [{0: m} for m in mappingsA]
+                    mappingsB = self.matchReactantToTemplate(moleculeB, template.reactants[1])
+                    mappingsB = [{1: m} for m in mappingsB]
 
                     # Iterate over each pair of matches (A, B)
-                    for mapA in mappingsA:
-                        for mapB in mappingsB:
-                            reactantStructures = [moleculeA, moleculeB]
-                            try:
-                                productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward)
-                            except ForbiddenStructureException:
-                                pass
-                            else:
-                                if productStructures is not None:
-                                    rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                    if rxn: rxnList.append(rxn)
+                    
+                    mappings = list(itertools.product(mappingsA, mappingsB))
+                    N = len(mappings)
+
+                    results = map_(
+                                WorkerWrapper(generate),
+                                mappings,
+                                [reactantStructures]*N,
+                                [forward]*N,
+                                [self.label]*N
+                            )
+                    rxnList.extend(filter(None, list(results)))
 
                     # Only check for swapped reactants if they are different
                     if reactants[0] is not reactants[1]:
 
                         # Reactants stored as B + A
-                        mappingsA = self.__matchReactantToTemplate(moleculeA, template.reactants[1])
-                        mappingsA = [createMolMap(m, 0) for m in mappingsA]
-                        mappingsB = self.__matchReactantToTemplate(moleculeB, template.reactants[0])
-                        mappingsB = [createMolMap(m, 1) for m in mappingsB]
+
+                        mappingsA = self.matchReactantToTemplate(moleculeA, template.reactants[1])
+                        mappingsA = [{0: m} for m in mappingsA]
+                        mappingsB = self.matchReactantToTemplate(moleculeB, template.reactants[0])
+                        mappingsB = [{1: m} for m in mappingsB]
 
                         # Iterate over each pair of matches (A, B)
-                        for mapA in mappingsA:
-                            for mapB in mappingsB:
-                                reactantStructures = [moleculeA, moleculeB]
-                                try:
-                                    productStructures = self.__generateProductStructures(reactantStructures, [mapA, mapB], forward)
-                                except ForbiddenStructureException:
-                                    pass
-                                else:
-                                    if productStructures is not None:
-                                        rxn = self.__createReaction(reactantStructures, productStructures, forward)
-                                        if rxn: rxnList.append(rxn)
+                        mappings = list(itertools.product(mappingsA, mappingsB))
+                        N = len(mappings)
+
+                        results = map_(
+                                    WorkerWrapper(generate),
+                                    mappings,
+                                    [reactantStructures]*N,
+                                    [forward]*N,
+                                    [self.label]*N
+                                )
+                        rxnList.extend(filter(None, list(results)))
+
         # If products is given, remove reactions from the reaction list that
         # don't generate the given products
         if products is not None:
@@ -1787,9 +1793,6 @@ def convertToAtomMapping(molmapping, molecules):
             atmap[mol.atoms[index]] = groupAt
 
     return atmap
-
-def createMolMap(mapping, molIndex):
-    return {molIndex: mapping}
 
 def inflateLabeledAtoms(reaction):
     """
