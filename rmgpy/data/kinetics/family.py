@@ -89,7 +89,8 @@ class TemplateReaction(Reaction):
                 family=None,
                 template=None,
                 estimator=None,
-                reverse=None
+                reverse=None,
+                labeledAtoms=None
                 ):
         Reaction.__init__(self,
                           index=index,
@@ -106,6 +107,7 @@ class TemplateReaction(Reaction):
         self.template = template
         self.estimator = estimator
         self.reverse = reverse
+        self.labeledAtoms = labeledAtoms
 
     def __reduce__(self):
         """
@@ -124,6 +126,7 @@ class TemplateReaction(Reaction):
                                    self.template,
                                    self.estimator,
                                    self.reverse,
+                                   self.labeledAtoms
                                    ))
 
     def getSource(self):
@@ -1172,9 +1175,9 @@ class KineticsFamily(Database):
         # Store the labeled atoms so we can recover them later
         # (e.g. for generating reaction pairs and templates)
         labeledAtoms = []
-        for reactant in reaction.reactants:
+        for i, reactant in enumerate(reaction.reactants):
             for label, atom in reactant.getLabeledAtoms().items():
-                labeledAtoms.append((label, atom))
+                labeledAtoms.append((label, (i, reactant.atoms.index(atom))))
         reaction.labeledAtoms = labeledAtoms
         
         return reaction
@@ -1472,6 +1475,9 @@ class KineticsFamily(Database):
             # Restore the labeled atoms long enough to generate some metadata
             for reactant in reaction.reactants:
                 reactant.clearLabeledAtoms()
+            
+            inflateLabeledAtoms(reaction)
+
             for label, atom in reaction.labeledAtoms:
                 atom.label = label
             
@@ -1485,8 +1491,6 @@ class KineticsFamily(Database):
             for label, atom in reaction.labeledAtoms:
                 atom.label = ''
             
-            # We're done with the labeled atoms, so delete the attribute
-            del reaction.labeledAtoms
             
         # This reaction list has only checked for duplicates within itself, not
         # with the global list of reactions
@@ -1786,3 +1790,18 @@ def convertToAtomMapping(molmapping, molecules):
 
 def createMolMap(mapping, molIndex):
     return {molIndex: mapping}
+
+def inflateLabeledAtoms(reaction):
+    """
+    Convert the labeled atoms from
+
+    (label, (mol index, atom index)) to
+    (label, Atom)
+    """
+    newLabeledAtoms = []
+    for label, indices in reaction.labeledAtoms:
+        moli, ati = indices
+        atom = reaction.reactants[moli].atoms[ati]
+        newLabeledAtoms.append((label, atom))
+
+    reaction.labeledAtoms = newLabeledAtoms
