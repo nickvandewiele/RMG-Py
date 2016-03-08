@@ -114,6 +114,6 @@ def deflate(reactionList, reactants, reactantIndices):
 
         rxn.reactants = [molDict[mol] for mol in rxn.reactants]
         rxn.products = [molDict[mol] for mol in rxn.products]
-        rxn.pairs = [(molDict[reactant],molDict[product]) for reactant, product in rxn.pairs]
+        # rxn.pairs = [(molDict[reactant],molDict[product]) for reactant, product in rxn.pairs]
 
     return reactionList

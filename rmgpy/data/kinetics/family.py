@@ -1482,7 +1482,7 @@ class KineticsFamily(Database):
                 atom.label = label
             
             # Generate metadata about the reaction that we will need later
-            reaction.pairs = self.getReactionPairs(reaction)
+            # reaction.pairs = self.getReactionPairs(reaction)
             reaction.template = self.getReactionTemplateLabels(reaction)
             if not forward:
                 reaction.degeneracy = self.calculateDegeneracy(reaction)

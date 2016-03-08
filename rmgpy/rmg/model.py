@@ -1771,10 +1771,10 @@ class CoreEdgeReactionModel:
         """
         reactants, products, pairs = [], [], []
 
-        for reactant, product in rxn.pairs:
-            reactant = self.getSpecies(reactant)
-            product = self.getSpecies(product)
-            pairs.append((reactant, product))
+        # for reactant, product in rxn.pairs:
+        #     reactant = self.getSpecies(reactant)
+        #     product = self.getSpecies(product)
+        #     pairs.append((reactant, product))
 
         for reactant in rxn.reactants:
             reactant = self.getSpecies(reactant)  
