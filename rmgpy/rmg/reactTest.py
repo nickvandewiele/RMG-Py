@@ -88,6 +88,38 @@ class TestReact(unittest.TestCase):
         self.assertIsNotNone(reactionList)
         self.assertTrue(all([isinstance(rxn, TemplateReaction) for rxn in reactionList]))
 
+    def testGenerate(self):
+        """
+        Test that reactions can be generated for a list of given mappings.
+        """
+        molA = Molecule().fromSMILES('CCCCCCCCCCCCC1C=CC=CC=1')
+        molB = Molecule().fromSMILES('[OH]')
+
+        families = getDB('kinetics').families
+        family = families[TESTFAMILY]
+        template = family.forwardTemplate
+        forward = True
+        reactantStructures = [molA, molB]
+
+        # Reactants stored as A + B
+        mappingsA = family.matchReactantToTemplate(molA, template.reactants[0])
+        self.assertTrue(len(mappingsA) > 0)
+        mappingsA = [{0: m} for m in mappingsA]
+
+        mappingsB = family.matchReactantToTemplate(molB, template.reactants[1])
+        self.assertTrue(len(mappingsB) > 0)
+        mappingsB = [{1: m} for m in mappingsB]
+
+        # Iterate over each pair of matches (A, B)
+        mappings = list(itertools.product(mappingsA, mappingsB))
+        self.assertTrue(len(mappings) > 0)
+        
+        rxns = [generate(m, reactantStructures, forward, TESTFAMILY) for m in mappings]
+        rxns = filter(None, rxns)
+
+        self.assertTrue(len(rxns) > 0)
+
+
     def tearDown(self):
         """
         Reset the loaded database
