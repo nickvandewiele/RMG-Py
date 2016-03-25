@@ -137,3 +137,13 @@ def generate(mappings, molecules, direction, fam):
         if productStructures is not None:
             rxn = family.createReaction(molecules, productStructures, direction)
             return rxn if rxn else None
+
+def generateWrapper(mappingsList, molecules, direction, fam):
+    """
+    Call the generate function on a list of mappings,
+    return the list of generated reactions.
+    """
+    logging.error('No. of mappings in generateWrapper: {}'.format(len(mappingsList)))
+    
+    rxnList = [generate(mappings, molecules, direction, fam) for mappings in mappingsList]
+    return filter(None, rxnList)
