@@ -1708,6 +1708,21 @@ multiplicity 2
         
         self.assertTrue(exp.isIsomorphic(calc))
 
+    def testMoleculeIsomorphismWithIsotopes(self):
+        """
+        Test that isomorphic isotopomers are correctly perceived as isomorphic.
+        """
+        import rmgpy.molecule.element
+        from rmgpy.molecule.element import Element
+
+        mol1 = Molecule().fromSMILES('CC')
+        mol1.atoms[0].element = getElement(6, 13)
+
+        mol2 = Molecule().fromSMILES('CC')
+        mol2.atoms[1].element = rmgpy.molecule.element.C13
+
+        self.assertTrue(mol1.isIsomorphic(mol2))
+
 ################################################################################
 
 if __name__ == '__main__':
