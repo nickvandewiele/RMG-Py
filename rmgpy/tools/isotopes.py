@@ -40,7 +40,9 @@ import itertools
 from copy import copy
 import pandas as pd
 import shutil
+import math
 
+import rmgpy.constants as constants
 from rmgpy.molecule import Molecule
 from rmgpy.molecule.element import getElement
 from rmgpy.tools.loader import loadRMGJob
@@ -137,6 +139,9 @@ def generateIsotopomers(spc, N=1):
                 unique = False
                 break
         if unique: filtered.append(candidate)
+
+    for isotopomer in filtered:
+        correctEntropy(isotopomer, spc)
 
     return filtered
 
@@ -292,6 +297,31 @@ def generateRMGModel(inputFile, outputDirectory):
     rmg.execute()
 
     return rmg
+
+def correctEntropy(isotopomer, isotopeless):
+    """
+    Correct the entropy of the isotopomer by the following correction for symmetry:
+
+    S(corrected) = S(original) + R*ln(sigma(isotopeless)) - R*ln(sigma(isotopomer))
+    """
+
+    # calculate -R ln (sigma) in SI units (J/K/mol)
+    Sisotopeless = - constants.R * math.log(isotopeless.molecule[0].calculateSymmetryNumber())
+    Sisotopomer = - constants.R * math.log(isotopomer.molecule[0].calculateSymmetryNumber())
+
+    # convert species thermo to ThermoData object:
+    nasa = isotopomer.getThermoData()
+    thermo = nasa.toThermoData()
+    
+    # apply correction to entropy at 298K
+    thermo.S298.value_si -= Sisotopeless
+    thermo.S298.value_si += Sisotopomer
+
+    # put the corrected thermo back as a species attribute:
+    isotopomer.thermo = thermo
+
+    # convert back to NASA object:
+    isotopomer.getThermoData()
 
 def run(inputFile, isotopeInputFile, outputDir, original=None, isotopeLoc=None):
     """
