@@ -33,6 +33,7 @@ Contains functions for generating reactions.
 """
 import logging
 import itertools
+import time
 
 from rmgpy.molecule.molecule import Molecule
 from rmgpy.data.rmg import getDB
@@ -70,13 +71,13 @@ def react(*spcTuples):
             molsB = [(mol, spcB.index) for mol in spcB.molecule]
             combos.extend(itertools.product(molsA, molsB))
 
+    logging.info('No. of created tasks: {}'.format(len(combos)))
     results = map_(
                 reactMolecules,
                 combos
             )
 
-    reactionList = itertools.chain.from_iterable(results)
-    return reactionList
+    return results
 
 def reactMolecules(moleculeTuples):
     """
@@ -86,7 +87,7 @@ def reactMolecules(moleculeTuples):
     The parameter contains a list of tuples with each tuple:
     (Molecule, index of the core species it belongs to)
     """
-
+    t1 = time.time()
     families = getDB('kinetics').families
     
     molecules, reactantIndices = zip(*moleculeTuples)
@@ -101,7 +102,8 @@ def reactMolecules(moleculeTuples):
 
     deflate(reactionList, molecules, reactantIndices)
 
-    return reactionList
+    dt = time.time() - t1
+    return reactionList, dt
 
 def deflate(rxns, molecules, reactantIndices):
     """
@@ -153,7 +155,14 @@ def reactAll(coreSpcList, numOldCoreSpecies, unimolecularReact, bimolecularReact
                     spcTuples.append((coreSpcList[i], coreSpcList[j]))
 
     rxns = list(react(*spcTuples))
-    return rxns
+    newReactionList, timings, reactionCount = [], [], []
+
+    for rxnList, dt in rxns:
+        timings.append(dt)
+        reactionCount.append(len(rxnList))
+        newReactionList.extend(rxnList)
+
+    return newReactionList, timings, reactionCount
 
 def deflateReaction(rxn, molDict):
     """
