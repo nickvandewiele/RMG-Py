@@ -128,3 +128,8 @@ def timefn(fn):
         logging.info ("@timefn: {} took {:.2f} seconds".format(fn.func_name, t2 - t1))
         return result
     return measure_time
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
