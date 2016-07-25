@@ -34,6 +34,7 @@ Contains functions for generating reactions.
 import logging
 import itertools
 
+from rmgpy.util import chunks
 from rmgpy.molecule.molecule import Molecule
 from rmgpy.data.rmg import getDB
 from rmgpy.scoop_framework.util import map_
@@ -70,12 +71,18 @@ def react(*spcTuples):
             molsB = [(mol, spcB.index) for mol in spcB.molecule]
             combos.extend(itertools.product(molsA, molsB))
 
-    results = map_(
-                reactMolecules,
-                combos
-            )
+    CHUNKSIZE = 10**4 # max. no. of tasks that will simultaneously be spawned.
+    chunked = list(chunks(combos, CHUNKSIZE))
 
-    reactionList = itertools.chain.from_iterable(results)
+    reactionList = []
+    for chunk in chunked:
+        results = map_(
+                    reactMolecules,
+                    chunk
+                )
+
+        reactionList.extend(list(itertools.chain.from_iterable(results)))
+
     return reactionList
 
 def reactMolecules(moleculeTuples):
@@ -152,7 +159,7 @@ def reactAll(coreSpcList, numOldCoreSpecies, unimolecularReact, bimolecularReact
                 if coreSpcList[i].reactive and coreSpcList[j].reactive:
                     spcTuples.append((coreSpcList[i], coreSpcList[j]))
 
-    rxns = list(react(*spcTuples))
+    rxns = react(*spcTuples)
     return rxns
 
 def deflateReaction(rxn, molDict):
