@@ -40,7 +40,7 @@ import os
 import sys
 import signal
 
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.util import logger as logging
 
 try:
 

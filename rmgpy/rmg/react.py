@@ -37,7 +37,7 @@ import time
 
 from rmgpy.molecule.molecule import Molecule
 from rmgpy.data.rmg import getDB
-from rmgpy.scoop_framework.util import map_
+from rmgpy.concurrent.util import map_
 from rmgpy.species import Species
         
 def react(*spcTuples):

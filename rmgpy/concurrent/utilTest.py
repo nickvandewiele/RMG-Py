@@ -10,7 +10,7 @@ import sys
 import unittest
 from external.wip import work_in_progress
 
-from rmgpy.scoop_framework.framework import TestScoopCommon
+from rmgpy.concurrent.framework import TestScoopCommon
 
 try:
     from scoop import futures, _control, shared

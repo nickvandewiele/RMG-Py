@@ -14,7 +14,7 @@ from external.wip import work_in_progress
 from rmgpy import settings
 from rmgpy.data.rmg import RMGDatabase
 from rmgpy.rmg.main import RMG
-from rmgpy.scoop_framework.framework import TestScoopCommon
+from rmgpy.concurrent.framework import TestScoopCommon
 
 from rmgpy.species import Species
 from rmgpy.thermo.thermoengine import submit

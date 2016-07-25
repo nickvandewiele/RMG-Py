@@ -4,8 +4,8 @@ import unittest
 import numpy as np
 from external.wip import work_in_progress
 
-from rmgpy.scoop_framework.framework import TestScoopCommon
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.framework import TestScoopCommon
+from rmgpy.concurrent.util import logger as logging
 
 import rmgpy
 

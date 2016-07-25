@@ -42,7 +42,7 @@ from rmgpy.solver.liquid import LiquidReactor
 
 from model import CoreEdgeReactionModel
 
-from rmgpy.scoop_framework.util import broadcast, get
+from rmgpy.concurrent.util import broadcast, get
 
 ################################################################################
 

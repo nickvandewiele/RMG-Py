@@ -3,7 +3,7 @@ import numpy
 import math
 
 import logging as logging
-from rmgpy.scoop_framework.util import submit_
+from rmgpy.concurrent.util import submit_
 from rmgpy.data.rmg import getDB
 import rmgpy.constants as constants
 from rmgpy.molecule import Molecule

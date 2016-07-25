@@ -36,7 +36,7 @@ from output import writeModel
 from optimization import optimize
 from reduction import computeObservables, initialize
 
-from rmgpy.scoop_framework.util import logger
+from rmgpy.concurrent.util import logger
 
 def main():
     level = 20#10 : debug, 20: info

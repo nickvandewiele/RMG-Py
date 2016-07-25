@@ -47,7 +47,7 @@ from rmgpy.molecule import Molecule, Atom, Bond, Group
 import rmgpy.molecule
 from rmgpy.species import Species
 
-from rmgpy.scoop_framework.util import get
+from rmgpy.concurrent.util import get
 
 #: This dictionary is used to add multiplicity to species label
 _multiplicity_labels = {1:'S',2:'D',3:'T',4:'Q',5:'V',}
