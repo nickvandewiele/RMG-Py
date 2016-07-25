@@ -36,8 +36,8 @@ import re
 
 #local imports
 from rmgpy.chemkin import getSpeciesIdentifier
-from rmgpy.scoop_framework.util import broadcast, get, map_
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.util import broadcast, get, map_
+from rmgpy.concurrent.util import logger as logging
 from rmgpy.rmg.main import RMG
 
 from model import ReductionReaction

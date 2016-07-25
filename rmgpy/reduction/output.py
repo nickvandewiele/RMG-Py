@@ -32,7 +32,7 @@ import os.path
 
 from rmgpy.chemkin import saveChemkinFile
 
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.util import logger as logging
 
 def writeModel(rmg, chemkin_name='chem_reduced.inp'):
     """

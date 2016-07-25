@@ -31,7 +31,7 @@
 import os.path
 
 from rmgpy.tools.loader import loadRMGPyJob
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.util import logger as logging
 
 def loadReductionInput(reductionFile):
     """

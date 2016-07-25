@@ -32,7 +32,7 @@ import numpy as np
 
 from reduction import reduceModel
 from output import writeModel
-from rmgpy.scoop_framework.util import logger as logging
+from rmgpy.concurrent.util import logger as logging
 
 def optimize(target_label, reactionModel, rmg, reactionSystemIndex, error, orig_observable):
     """

@@ -17,7 +17,7 @@ from rmgpy.data.rmg import RMGDatabase, database
 from rmgpy.rmg.main import RMG
 from rmgpy.rmg.model import Species
 
-from rmgpy.scoop_framework.framework import TestScoopCommon
+from rmgpy.concurrent.framework import TestScoopCommon
 
 from rmgpy.rmg.react import *
 
