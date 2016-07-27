@@ -1282,13 +1282,15 @@ class KineticsFamily(Database):
         template reactant and ``False`` if not, along with a complete list of the
         mappings.
         """
+        from rmgpy.data.rmg import getDB
 
+        groups = getDB('groups')[self.label]
         if isinstance(templateReactant, list): templateReactant = templateReactant[0]
         struct = templateReactant.item
         
         if isinstance(struct, LogicNode):
             mappings = []
-            for child_structure in struct.getPossibleStructures(self.groups.entries):
+            for child_structure in struct.getPossibleStructures(groups.entries):
                 mappings.extend(reactant.findSubgraphIsomorphisms(child_structure))
             return mappings
         elif isinstance(struct, Group):
@@ -1673,7 +1675,12 @@ class KineticsFamily(Database):
         as the reactants, determine the most specific nodes in the tree that
         describe the reaction.
         """
-        return self.groups.getReactionTemplate(reaction)
+
+        from rmgpy.data.rmg import getDB
+
+        groups = getDB('groups')[self.label]
+
+        return groups.getReactionTemplate(reaction)
 
     def getKineticsForTemplate(self, template, degeneracy=1, method='rate rules'):
         """
@@ -1829,9 +1836,14 @@ class KineticsFamily(Database):
         labels of the reaction template and 
         return a list.
         """
+
+        from rmgpy.data.rmg import getDB
+
+        groups = getDB('groups')[self.label]
+
         template = []
         for label in templateLabels:
-            template.append(self.groups.entries[label])
+            template.append(groups.entries[label])
 
         return template
 
