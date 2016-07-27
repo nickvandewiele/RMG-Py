@@ -62,6 +62,8 @@ class RMGDatabase:
         self.kinetics = None
         self.statmech = None
         self.solvation = None
+        self.rules = None
+        self.groups = None
         
         # Store the newly created database in the module.
         global database
@@ -164,6 +166,24 @@ class RMGDatabase:
                            depositories=kineticsDepositories
                            )
 
+        self.rules = {}
+        self.groups = {}
+        families = {}
+
+        for label, family in self.kinetics.families.iteritems():
+            self.rules[label] = family.rules
+            family.rules = None
+
+            self.groups[label] = family.groups
+            family.groups = None
+
+            families[label] = family
+
+        self.kinetics.families = families
+
+        broadcast(self.rules, 'rules')
+        broadcast(self.groups, 'groups')
+
         broadcast(self.kinetics, 'kinetics')
 
     def loadSolvation(self, path):
@@ -250,6 +270,10 @@ def getDB(name):
             return database.statmech
         elif name == 'forbidden':
             return database.forbiddenStructures
+        elif name == 'rules':
+            return database.rules
+        elif name == 'groups':
+            return database.groups
         else:
             raise Exception('Unrecognized database keyword: {}'.format(name))
     else:
