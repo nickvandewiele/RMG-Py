@@ -89,7 +89,7 @@ def reactMolecules(moleculeTuples):
     """
     t1 = time.time()
     families = getDB('kinetics').families
-    
+    tget = time.time() - t1
     molecules, reactantIndices = zip(*moleculeTuples)
 
     reactionList = []
@@ -103,7 +103,7 @@ def reactMolecules(moleculeTuples):
     deflate(reactionList, molecules, reactantIndices)
 
     dt = time.time() - t1
-    return reactionList, dt
+    return reactionList, dt, tget
 
 def deflate(rxns, molecules, reactantIndices):
     """
@@ -155,14 +155,15 @@ def reactAll(coreSpcList, numOldCoreSpecies, unimolecularReact, bimolecularReact
                     spcTuples.append((coreSpcList[i], coreSpcList[j]))
 
     rxns = list(react(*spcTuples))
-    newReactionList, timings, reactionCount = [], [], []
+    newReactionList, timings, tgets, reactionCount = [], [], [], []
 
-    for rxnList, dt in rxns:
+    for rxnList, dt, tget in rxns:
         timings.append(dt)
+        tgets.append(tget)
         reactionCount.append(len(rxnList))
         newReactionList.extend(rxnList)
 
-    return newReactionList, timings, reactionCount
+    return newReactionList, timings, tgets, reactionCount
 
 def deflateReaction(rxn, molDict):
     """
