@@ -85,11 +85,8 @@ class KineticsRules(Database):
             longDesc = longDesc.strip(),
             rank = rank,
         )
-        try:
-            self.entries[label].append(entry)
-        except KeyError:
-            self.entries[label] = [entry]
-        return entry
+
+        return None
 
     def saveEntry(self, f, entry):
         """
