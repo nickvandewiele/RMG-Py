@@ -1191,12 +1191,6 @@ class KineticsFamily(Database):
             for reactantAtom, templateAtom in m.iteritems():
                 reactantAtom.label = templateAtom.label
 
-        # Check that reactant structures are allowed in this family
-        # If not, then stop
-        for struct in reactantStructures:
-            if self.isMoleculeForbidden(struct):
-                raise ForbiddenStructureException()
-
         # Generate the product structures by applying the forward reaction recipe
         try:
             productStructures = self.applyRecipe(reactantStructures, forward=forward)
@@ -1215,13 +1209,6 @@ class KineticsFamily(Database):
             if not productStructures[0].containsLabeledAtom('*1') and \
                 productStructures[1].containsLabeledAtom('*1'):
                 productStructures.reverse()
-
-        # Apply the generated species constraints (if given)
-        for struct in productStructures:
-            if self.isMoleculeForbidden(struct):
-                raise ForbiddenStructureException() 
-            if failsSpeciesConstraints(struct):
-                raise ForbiddenStructureException() 
                 
         return productStructures
 
