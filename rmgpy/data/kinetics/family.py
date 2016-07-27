@@ -371,12 +371,12 @@ class KineticsFamily(Database):
         try:
             self.groups.loadOldDictionary(os.path.join(path, 'dictionary.txt'), pattern=True)
         except Exception:
-            logging.error('Error while reading old kinetics family dictionary from {0!r}.'.format(path))
+            # logging.error('Error while reading old kinetics family dictionary from {0!r}.'.format(path))
             raise
         try:
             self.groups.loadOldTree(os.path.join(path, 'tree.txt'))
         except Exception:
-            logging.error('Error while reading old kinetics family tree from {0!r}.'.format(path))
+            # logging.error('Error while reading old kinetics family tree from {0!r}.'.format(path))
             raise
 
         # The old kinetics groups use rate rules (not group additivity values),
@@ -386,7 +386,7 @@ class KineticsFamily(Database):
         try:
             self.loadOldTemplate(os.path.join(path, 'reactionAdjList.txt'))
         except Exception:
-            logging.error('Error while reading old kinetics family template/recipe from {0!r}.'.format(path))
+            # logging.error('Error while reading old kinetics family template/recipe from {0!r}.'.format(path))
             raise
         # Construct the forward and reverse templates
         reactants = [self.groups.entries[label] for label in self.forwardTemplate.reactants]
@@ -405,7 +405,7 @@ class KineticsFamily(Database):
             if os.path.exists(os.path.join(path, 'forbiddenGroups.txt')):
                 self.forbidden = ForbiddenStructures().loadOld(os.path.join(path, 'forbiddenGroups.txt'))
         except Exception:
-            logging.error('Error while reading old kinetics family forbidden groups from {0!r}.'.format(path))
+            # logging.error('Error while reading old kinetics family forbidden groups from {0!r}.'.format(path))
             raise
             
         entries = self.groups.top[:]
@@ -419,7 +419,7 @@ class KineticsFamily(Database):
         try:
             self.rules.loadOld(path, self.groups, numLabels=max(len(self.forwardTemplate.reactants), len(self.groups.top)))
         except Exception:
-            logging.error('Error while reading old kinetics family rules from {0!r}.'.format(path))
+            # logging.error('Error while reading old kinetics family rules from {0!r}.'.format(path))
             raise
         self.depositories = {}
 
@@ -462,7 +462,7 @@ class KineticsFamily(Database):
                         elif token != '+' and atArrow:
                             self.forwardTemplate.products.append(token)
         except IOError, e:
-            logging.exception('Database template file "' + e.filename + '" not found.')
+            # logging.exception('Database template file "' + e.filename + '" not found.')
             raise
         finally:
             if ftemp: ftemp.close()
@@ -530,7 +530,7 @@ class KineticsFamily(Database):
         local_context['True'] = True
         local_context['False'] = False
         self.groups = KineticsGroups(label='{0}/groups'.format(self.label))
-        logging.debug("Loading kinetics family groups from {0}".format(os.path.join(path, 'groups.py')))
+        # logging.debug("Loading kinetics family groups from {0}".format(os.path.join(path, 'groups.py')))
         Database.load(self.groups, os.path.join(path, 'groups.py'), local_context, global_context)
         self.name = self.label
         
@@ -552,7 +552,7 @@ class KineticsFamily(Database):
         self.groups.numReactants = len(self.forwardTemplate.reactants)
             
         self.rules = KineticsRules(label='{0}/rules'.format(self.label))
-        logging.debug("Loading kinetics family rules from {0}".format(os.path.join(path, 'rules.py')))
+        # logging.debug("Loading kinetics family rules from {0}".format(os.path.join(path, 'rules.py')))
         self.rules.load(os.path.join(path, 'rules.py'), local_context, global_context)
         # load the groups indicated in the entry label
         for label, entries in self.rules.entries.iteritems():
@@ -574,7 +574,7 @@ class KineticsFamily(Database):
                     fpath = os.path.join(path, name, 'reactions.py')
                     label = '{0}/{1}'.format(self.label, name)
                     depository = KineticsDepository(label=label)
-                    logging.debug("Loading kinetics family depository from {0}".format(fpath))
+                    # logging.debug("Loading kinetics family depository from {0}".format(fpath))
                     depository.load(fpath, local_context, global_context)
                     self.depositories.append(depository)
             return
@@ -598,10 +598,10 @@ class KineticsFamily(Database):
             #f = name+'.py'
             fpath = os.path.join(path, name, 'reactions.py')
             if not os.path.exists(fpath):
-                logging.warning("Requested depository {0} does not exist".format(fpath))
+                # logging.warning("Requested depository {0} does not exist".format(fpath))
                 continue
             depository = KineticsDepository(label=label)
-            logging.debug("Loading kinetics family depository from {0}".format(fpath))
+            # logging.debug("Loading kinetics family depository from {0}".format(fpath))
             depository.load(fpath, local_context, global_context)
             self.depositories.append(depository)
         
@@ -699,8 +699,8 @@ class KineticsFamily(Database):
             if depository.label.endswith('training'):
                 break
         else:
-            logging.info('Could not find training depository in family {0}.'.format(self.label))
-            logging.info('Starting a new one')
+            # logging.info('Could not find training depository in family {0}.'.format(self.label))
+            # logging.info('Starting a new one')
             depository = KineticsDepository()
             self.depositories.append(depository)
         
@@ -816,24 +816,24 @@ class KineticsFamily(Database):
         # First, generate a list of reactant structures that are actual
         # structures, rather than unions
         reactantStructures = []
-        logging.log(1, "Generating template for products.")
+        # logging.log(1, "Generating template for products.")
         for reactant in reactants0:
             if isinstance(reactant, list):  reactants = [reactant[0]]
             else:                           reactants = [reactant]
 
-            logging.log(1, "Reactants: {0}".format(reactants))
+            # logging.log(1, "Reactants: {0}".format(reactants))
             for s in reactants:
-                logging.log(1, "Reactant {0}".format(s))
+                # logging.log(1, "Reactant {0}".format(s))
                 struct = s.item
                 if isinstance(struct, LogicNode):
                     all_structures = struct.getPossibleStructures(self.groups.entries)
-                    logging.log(1, 'Expanding logic node {0} to {1}'.format(s, all_structures))
+                    # logging.log(1, 'Expanding logic node {0} to {1}'.format(s, all_structures))
                     reactantStructures.append(all_structures)
-                    for p in all_structures:
-                        logging.log(1, p.toAdjacencyList() )
+                    # for p in all_structures:
+                        # logging.log(1, p.toAdjacencyList() )
                 else:
                     reactantStructures.append([struct])
-                    logging.log(1, struct.toAdjacencyList() )
+                    # logging.log(1, struct.toAdjacencyList() )
 
         # Second, get all possible combinations of reactant structures
         reactantStructures = getAllCombinations(reactantStructures)
@@ -860,8 +860,8 @@ class KineticsFamily(Database):
                 else:
                     productStructureList[i].append(struct)
                     
-        logging.log(1, "Unique generated product structures:")
-        logging.log(1, "\n".join([p[0].toAdjacencyList() for p in productStructures]))
+        # logging.log(1, "Unique generated product structures:")
+        # logging.log(1, "\n".join([p[0].toAdjacencyList() for p in productStructures]))
         
         # Fifth, associate structures with product template
         productSet = []
@@ -927,8 +927,8 @@ class KineticsFamily(Database):
             if depository.label.endswith('training'):
                 break
         else:
-            logging.info('Could not find training depository in family {0}.'.format(self.label))
-            logging.info('Must be because you turned off the training depository.')
+            # logging.info('Could not find training depository in family {0}.'.format(self.label))
+            # logging.info('Must be because you turned off the training depository.')
             return
         
         
@@ -1196,11 +1196,11 @@ class KineticsFamily(Database):
             productStructures = self.applyRecipe(reactantStructures, forward=forward)
             if not productStructures: return None
         except InvalidActionError:
-#            logging.error('Unable to apply reaction recipe!')
-#            logging.error('Reaction family is {0} in {1} direction'.format(self.label, 'forward' if forward else 'reverse'))
-#            logging.error('Reactant structures are:')
+           # logging.error('Unable to apply reaction recipe!')
+           # logging.error('Reaction family is {0} in {1} direction'.format(self.label, 'forward' if forward else 'reverse'))
+           # logging.error('Reactant structures are:')
 #            for struct in reactantStructures:
-#                logging.error(struct.toAdjacencyList())
+               # logging.error(struct.toAdjacencyList())
             # If unable to apply the reaction recipe, then return no product structures
             return None
 
@@ -1303,16 +1303,16 @@ class KineticsFamily(Database):
             for rxn in reactionList:
                 reactions = self.__generateReactions(rxn.products, products=rxn.reactants, forward=True)
                 if len(reactions) != 1:
-                    logging.error("Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
-                    logging.error("There is likely a bug in the RMG-database kinetics reaction family involving a missing group, missing atomlabels, forbidden groups, etc.")
-                    for reactant in rxn.reactants:
-                        logging.info("Reactant")
-                        logging.info(reactant.toAdjacencyList())
-                    for product in rxn.products:
-                        logging.info("Product")
-                        logging.info(product.toAdjacencyList())
-                    logging.error("Debugging why no reaction was found...")
-                    logging.error("Checking whether the family's forbidden species have affected reaction generation...")
+                    # logging.error("Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
+                    # logging.error("There is likely a bug in the RMG-database kinetics reaction family involving a missing group, missing atomlabels, forbidden groups, etc.")
+                    # for reactant in rxn.reactants:
+                        # logging.info("Reactant")
+                        # logging.info(reactant.toAdjacencyList())
+                    # for product in rxn.products:
+                        # logging.info("Product")
+                        # logging.info(product.toAdjacencyList())
+                    # logging.error("Debugging why no reaction was found...")
+                    # logging.error("Checking whether the family's forbidden species have affected reaction generation...")
                     # Set family's forbidden structures to empty for now to see if reaction gets generated...
                     # Note that it is not necessary to check global forbidden structures, because this reaction would not have
                     # been formed in the first place.
@@ -1323,10 +1323,10 @@ class KineticsFamily(Database):
                     finally:
                         self.forbidden = tempObject
                     if len(reactions) != 1:
-                        logging.error("Still experiencing error: Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
+                        # logging.error("Still experiencing error: Expecting one matching reverse reaction, not {0} in reaction family {1} for forward reaction {2}.\n".format(len(reactions), self.label, str(rxn)))
                         raise KineticsError("Did not find reverse reaction in reaction family {0} for reaction {1}.".format(self.label, str(rxn)))
                     else:
-                        logging.error("Error was fixed, the product is a forbidden structure when used as a reactant in the reverse direction.")
+                        # logging.error("Error was fixed, the product is a forbidden structure when used as a reactant in the reverse direction.")
                         # Delete this reaction, since it should probably also be forbidden in the initial direction
                         # Hack fix for now
                         del rxn
@@ -1348,10 +1348,10 @@ class KineticsFamily(Database):
         """
         reactions = self.__generateReactions(reaction.reactants, products=reaction.products, forward=True)
         if len(reactions) != 1:
-            for reactant in reaction.reactants:
-                logging.error(reactant)
-            for product in reaction.products:
-                logging.error(product)
+            # for reactant in reaction.reactants:
+                # logging.error(reactant)
+            # for product in reaction.products:
+                # logging.error(product)
             raise KineticsError(('Unable to calculate degeneracy for reaction {0} '
                                  'in reaction family {1}. Expected 1 reaction '
                                  'but generated {2}').format(reaction, self.label, len(reactions)))
@@ -1744,7 +1744,7 @@ class KineticsFamily(Database):
             try:
                 kinetics, entry = self.getKineticsForTemplate(template, degeneracy, method=estimator)
             except Exception:
-                logging.error("Error getting kinetics for reaction {0!s}.\n{0!r}".format(reaction))
+                # logging.error("Error getting kinetics for reaction {0!s}.\n{0!r}".format(reaction))
                 raise
 
             if kinetics:
