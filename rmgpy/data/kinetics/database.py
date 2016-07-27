@@ -101,7 +101,7 @@ class KineticsDatabase(object):
         """
         self.loadRecommendedFamiliesList(os.path.join(path, 'families', 'recommended.py')),
         self.loadFamilies(os.path.join(path, 'families'), families, depositories)
-        self.loadLibraries(os.path.join(path, 'libraries'), libraries)
+        # self.loadLibraries(os.path.join(path, 'libraries'), libraries)
 
     def loadRecommendedFamiliesList(self, filepath):
         """
