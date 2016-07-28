@@ -1252,17 +1252,7 @@ class KineticsFamily(Database):
         """
         from rmgpy.data.rmg import getDB
 
-        groups = getDB('groups')[self.label]
-        if isinstance(templateReactant, list): templateReactant = templateReactant[0]
-        struct = templateReactant.item
-        
-        if isinstance(struct, LogicNode):
-            mappings = []
-            for child_structure in struct.getPossibleStructures(groups.entries):
-                mappings.extend(reactant.findSubgraphIsomorphisms(child_structure))
-            return mappings
-        elif isinstance(struct, Group):
-            return reactant.findSubgraphIsomorphisms(struct)
+        return []
 
     def generateReactions(self, reactants):
         """
