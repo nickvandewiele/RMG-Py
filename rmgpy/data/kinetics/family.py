@@ -1191,26 +1191,7 @@ class KineticsFamily(Database):
             for reactantAtom, templateAtom in m.iteritems():
                 reactantAtom.label = templateAtom.label
 
-        # Generate the product structures by applying the forward reaction recipe
-        try:
-            productStructures = self.applyRecipe(reactantStructures, forward=forward)
-            if not productStructures: return None
-        except InvalidActionError:
-           # logging.error('Unable to apply reaction recipe!')
-           # logging.error('Reaction family is {0} in {1} direction'.format(self.label, 'forward' if forward else 'reverse'))
-           # logging.error('Reactant structures are:')
-#            for struct in reactantStructures:
-               # logging.error(struct.toAdjacencyList())
-            # If unable to apply the reaction recipe, then return no product structures
-            return None
-
-        # If there are two product structures, place the one containing '*1' first
-        if len(productStructures) == 2:
-            if not productStructures[0].containsLabeledAtom('*1') and \
-                productStructures[1].containsLabeledAtom('*1'):
-                productStructures.reverse()
-                
-        return productStructures
+        return None
 
     def isMoleculeForbidden(self, molecule):
         """
