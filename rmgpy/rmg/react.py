@@ -94,8 +94,7 @@ def reactMolecules(moleculeTuples):
 
     reactionList = []
     for _, family in families.iteritems():
-        rxns = family.generateReactions(molecules)
-        reactionList.extend(rxns)
+        pass
 
     for reactant in molecules:
         reactant.clearLabeledAtoms()
