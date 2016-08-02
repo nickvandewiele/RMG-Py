@@ -71,7 +71,7 @@ def react(*spcTuples):
             molsB = [(mol, spcB.index) for mol in spcB.molecule]
             combos.extend(itertools.product(molsA, molsB))
 
-    CHUNKSIZE = 10**4 # max. no. of tasks that will simultaneously be spawned.
+    CHUNKSIZE = 10**3 # max. no. of tasks that will simultaneously be spawned.
     chunked = list(chunks(combos, CHUNKSIZE))
 
     reactionList = []
