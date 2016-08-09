@@ -147,7 +147,6 @@ def generateIsotopomers(spc, N=1):
 
     return filtered
 
-
 def addIsotope(i, N, mol, mols, element):
     """
     
@@ -312,18 +311,15 @@ def correctEntropy(isotopomer, isotopeless):
     Sisotopomer = - constants.R * math.log(isotopomer.molecule[0].calculateSymmetryNumber())
 
     # convert species thermo to ThermoData object:
-    nasa = isotopomer.getThermoData()
+    nasa = isotopomer.thermo
     thermo = nasa.toThermoData()
-    
+
     # apply correction to entropy at 298K
     thermo.S298.value_si -= Sisotopeless
     thermo.S298.value_si += Sisotopomer
 
     # put the corrected thermo back as a species attribute:
     isotopomer.thermo = thermo
-
-    # convert back to NASA object:
-    isotopomer.getThermoData()
 
 def run(inputFile, isotopeInputFile, outputDir, original=None, isotopeLoc=None):
     """
